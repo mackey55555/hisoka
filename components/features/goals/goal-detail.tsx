@@ -9,8 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { formatDate, formatDateTime } from '@/lib/utils/helpers';
 import { updateGoal, deleteGoal } from '@/lib/actions/goals';
-import { createActivity, getActivitiesByGoalId } from '@/lib/actions/activities';
-import { createReflection, getReflectionsByActivityId } from '@/lib/actions/reflections';
+import { createActivity, updateActivity, deleteActivity, getActivitiesByGoalId } from '@/lib/actions/activities';
+import { createReflection, updateReflection, deleteReflection, getReflectionsByActivityId } from '@/lib/actions/reflections';
 import type { Goal, Activity, Reflection } from '@/types';
 
 interface GoalDetailProps {
@@ -24,7 +24,11 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
   const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
+  const [isActivityEditModalOpen, setIsActivityEditModalOpen] = useState(false);
+  const [isReflectionEditModalOpen, setIsReflectionEditModalOpen] = useState(false);
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
   const [reflections, setReflections] = useState<Record<string, Reflection[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -135,6 +139,120 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
     }
   };
 
+  const handleActivityEdit = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setIsActivityEditModalOpen(true);
+  };
+
+  const handleActivityEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedActivity) return;
+
+    setError('');
+    setLoading(true);
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const result = await updateActivity(selectedActivity.id, formData);
+
+    if (result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
+
+    // 最新の活動記録を取得して状態を更新
+    const { data: updatedActivities } = await getActivitiesByGoalId(goal.id);
+    if (updatedActivities) {
+      setActivities(updatedActivities);
+    }
+
+    setIsActivityEditModalOpen(false);
+    setSelectedActivity(null);
+    setLoading(false);
+    if (form) {
+      form.reset();
+    }
+  };
+
+  const handleActivityDelete = async (activityId: string) => {
+    if (!confirm('この活動記録を削除しますか？')) return;
+
+    setLoading(true);
+    const result = await deleteActivity(activityId);
+
+    if (result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
+
+    // 最新の活動記録を取得して状態を更新
+    const { data: updatedActivities } = await getActivitiesByGoalId(goal.id);
+    if (updatedActivities) {
+      setActivities(updatedActivities);
+    }
+
+    setLoading(false);
+  };
+
+  const handleReflectionEdit = (reflection: Reflection) => {
+    setSelectedReflection(reflection);
+    setIsReflectionEditModalOpen(true);
+  };
+
+  const handleReflectionEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedReflection || !selectedActivityId) return;
+
+    setError('');
+    setLoading(true);
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const result = await updateReflection(selectedReflection.id, formData);
+
+    if (result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
+
+    // 最新の振り返りを取得して状態を更新
+    const { data: updatedReflections } = await getReflectionsByActivityId(selectedActivityId);
+    if (updatedReflections) {
+      setReflections(prev => ({ ...prev, [selectedActivityId]: updatedReflections }));
+    }
+
+    setIsReflectionEditModalOpen(false);
+    setSelectedReflection(null);
+    setLoading(false);
+    if (form) {
+      form.reset();
+    }
+  };
+
+  const handleReflectionDelete = async (reflectionId: string, activityId: string) => {
+    if (!confirm('この振り返りを削除しますか？')) return;
+
+    setLoading(true);
+    const result = await deleteReflection(reflectionId);
+
+    if (result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
+
+    // 最新の振り返りを取得して状態を更新
+    const { data: updatedReflections } = await getReflectionsByActivityId(activityId);
+    if (updatedReflections) {
+      setReflections(prev => ({ ...prev, [activityId]: updatedReflections }));
+    }
+
+    setLoading(false);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6 mt-4">
@@ -202,12 +320,34 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
             {activities.map((activity) => (
               <Card key={activity.id}>
                 <div className="mb-3">
-                  <p className="text-text-primary whitespace-pre-wrap">
-                    {activity.content}
-                  </p>
-                  <p className="text-sm text-text-secondary mt-2">
-                    {formatDateTime(activity.created_at)}
-                  </p>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-text-primary whitespace-pre-wrap">
+                        {activity.content}
+                      </p>
+                      <p className="text-sm text-text-secondary mt-2">
+                        {formatDateTime(activity.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button
+                        variant="ghost"
+                        className="text-sm"
+                        onClick={() => handleActivityEdit(activity)}
+                        disabled={loading}
+                      >
+                        編集
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="text-sm text-error"
+                        onClick={() => handleActivityDelete(activity.id)}
+                        disabled={loading}
+                      >
+                        削除
+                      </Button>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <Button
@@ -228,12 +368,34 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
                           key={reflection.id}
                           className="pl-4 border-l-2 border-primary/30"
                         >
-                          <p className="text-text-primary whitespace-pre-wrap">
-                            {reflection.content}
-                          </p>
-                          <p className="text-sm text-text-secondary mt-1">
-                            {formatDateTime(reflection.created_at)}
-                          </p>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="text-text-primary whitespace-pre-wrap">
+                                {reflection.content}
+                              </p>
+                              <p className="text-sm text-text-secondary mt-1">
+                                {formatDateTime(reflection.created_at)}
+                              </p>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <Button
+                                variant="ghost"
+                                className="text-xs"
+                                onClick={() => handleReflectionEdit(reflection)}
+                                disabled={loading}
+                              >
+                                編集
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                className="text-xs text-error"
+                                onClick={() => handleReflectionDelete(reflection.id, activity.id)}
+                                disabled={loading}
+                              >
+                                削除
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -362,6 +524,84 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
               onClick={() => {
                 setIsReflectionModalOpen(false);
                 setSelectedActivityId(null);
+              }}
+              disabled={loading}
+            >
+              キャンセル
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* 活動記録編集モーダル */}
+      <Modal
+        isOpen={isActivityEditModalOpen}
+        onClose={() => {
+          setIsActivityEditModalOpen(false);
+          setSelectedActivity(null);
+        }}
+        title="活動記録を編集"
+      >
+        <form onSubmit={handleActivityEditSubmit} className="space-y-4">
+          <Textarea
+            label="活動内容"
+            name="content"
+            rows={6}
+            defaultValue={selectedActivity?.content || ''}
+            required
+            disabled={loading}
+            placeholder="実施した活動の詳細を記入してください"
+          />
+          {error && <div className="text-error text-sm">{error}</div>}
+          <div className="flex gap-4">
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? '更新中...' : '更新'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsActivityEditModalOpen(false);
+                setSelectedActivity(null);
+              }}
+              disabled={loading}
+            >
+              キャンセル
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* 振り返り編集モーダル */}
+      <Modal
+        isOpen={isReflectionEditModalOpen}
+        onClose={() => {
+          setIsReflectionEditModalOpen(false);
+          setSelectedReflection(null);
+        }}
+        title="振り返りを編集"
+      >
+        <form onSubmit={handleReflectionEditSubmit} className="space-y-4">
+          <Textarea
+            label="振り返り内容"
+            name="content"
+            rows={6}
+            defaultValue={selectedReflection?.content || ''}
+            required
+            disabled={loading}
+            placeholder="トレーナーとの対話内容や気づきを記入してください"
+          />
+          {error && <div className="text-error text-sm">{error}</div>}
+          <div className="flex gap-4">
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? '更新中...' : '更新'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsReflectionEditModalOpen(false);
+                setSelectedReflection(null);
               }}
               disabled={loading}
             >

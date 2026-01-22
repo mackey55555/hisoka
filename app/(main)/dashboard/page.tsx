@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { getGoals } from '@/lib/actions/goals';
 import { formatDate, isDeadlineNear, isDeadlinePassed } from '@/lib/utils/helpers';
 import { createClient } from '@/lib/supabase/server';
+import { ProgressCharts } from '@/components/features/dashboard/progress-charts';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -29,12 +30,21 @@ export default async function DashboardPage() {
   const thisYear = new Date().getFullYear();
 
   // 今月の活動数を取得
-  const { data: activities } = await supabase
+  const { data: activitiesThisMonth } = await supabase
     .from('activities')
     .select('id, created_at, goals!inner(user_id)')
     .eq('goals.user_id', user.id)
     .gte('created_at', new Date(thisYear, thisMonth, 1).toISOString())
     .lt('created_at', new Date(thisYear, thisMonth + 1, 1).toISOString());
+
+  // グラフ用の全活動データを取得（過去6ヶ月）
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const { data: allActivities } = await supabase
+    .from('activities')
+    .select('created_at, goals!inner(user_id)')
+    .eq('goals.user_id', user.id)
+    .gte('created_at', sixMonthsAgo.toISOString());
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -59,10 +69,18 @@ export default async function DashboardPage() {
             今月の活動
           </h2>
           <p className="text-3xl font-bold text-primary">
-            {activities?.length || 0}
+            {activitiesThisMonth?.length || 0}
           </p>
         </Card>
       </div>
+
+      {/* 進捗可視化グラフ */}
+      {(goalsArray.length > 0 || (allActivities && allActivities.length > 0)) && (
+        <ProgressCharts 
+          goals={goalsArray} 
+          activities={(allActivities as Array<{ created_at: string }> | null)?.map(a => ({ created_at: a.created_at })) || []} 
+        />
+      )}
 
       <div className="mb-6">
         <h2 className="text-xl font-bold text-text-primary mb-4">目標一覧</h2>
