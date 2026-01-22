@@ -16,17 +16,17 @@ export default function AdminPage() {
               ユーザー管理
             </h2>
             <p className="text-text-secondary">
-              ユーザーの一覧表示・編集・削除
+              ユーザーの一覧表示・新規作成
             </p>
           </Card>
         </Link>
-        <Link href="/admin/assignments">
+        <Link href="/admin/trainers">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <h2 className="text-xl font-bold text-text-primary mb-2">
-              紐付け管理
+              トレーナー管理
             </h2>
             <p className="text-text-secondary">
-              トレーナーとトレーニーの紐付け管理
+              トレーナー一覧とトレーニー紐付け管理
             </p>
           </Card>
         </Link>
