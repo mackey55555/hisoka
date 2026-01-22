@@ -1,4 +1,5 @@
 import { Header } from '@/components/layout/header';
+import { Sidebar } from '@/components/layout/sidebar';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
@@ -50,7 +51,10 @@ export default async function MainLayout({
   return (
     <>
       <Header />
-      <main className="min-h-screen">{children}</main>
+      <div className="flex min-h-screen">
+        <Sidebar role="trainee" />
+        <main className="flex-1 lg:ml-64 min-h-screen pt-16 lg:pt-16">{children}</main>
+      </div>
     </>
   );
 }

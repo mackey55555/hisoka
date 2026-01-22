@@ -33,7 +33,7 @@ export default function NewGoalPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <h1 className="text-2xl font-bold text-text-primary mb-6">新規目標作成</h1>
+      <h1 className="text-2xl font-bold text-text-primary mb-6 mt-4">新規目標作成</h1>
       <Card>
         <form onSubmit={handleSubmit} className="space-y-6">
           <Textarea

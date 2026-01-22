@@ -50,11 +50,23 @@ export default async function TrainerDetailPage({
     .eq('role_id', traineeRole?.id || '')
     .order('name');
 
+  // 各トレーニーの現在の紐付け状況を取得（どのトレーナーに紐付けられているか）
+  const { data: allAssignments } = await supabase
+    .from('trainer_trainees')
+    .select('trainee_id, trainer_id');
+
+  // trainee_idをキーにしたオブジェクトを作成（Mapはシリアライズできないため）
+  const assignmentMap: Record<string, string> = {};
+  allAssignments?.forEach(assignment => {
+    assignmentMap[assignment.trainee_id] = assignment.trainer_id;
+  });
+
   return (
     <TrainerDetail
       trainer={trainer}
       allTrainees={allTrainees || []}
       assignedTraineeIds={assignedTraineeIds}
+      assignmentMap={assignmentMap}
     />
   );
 }

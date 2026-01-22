@@ -48,7 +48,7 @@ export default async function TraineeDetailPage({
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-6">
+      <div className="mb-6 mt-4">
         <h1 className="text-2xl font-bold text-text-primary mb-2">
           {trainee.name}さんの進捗
         </h1>

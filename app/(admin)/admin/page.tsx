@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 export default function AdminPage() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-text-primary mb-6">
+      <h1 className="text-2xl font-bold text-text-primary mb-6 mt-4">
         管理画面
       </h1>
 

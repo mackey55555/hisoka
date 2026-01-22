@@ -24,7 +24,7 @@ export default async function TrainerDashboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-text-primary mb-6">
+      <h1 className="text-2xl font-bold text-text-primary mb-6 mt-4">
         トレーナーダッシュボード
       </h1>
 

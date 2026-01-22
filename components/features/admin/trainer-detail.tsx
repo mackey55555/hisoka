@@ -19,12 +19,14 @@ interface TrainerDetailProps {
     email: string;
   }>;
   assignedTraineeIds: string[];
+  assignmentMap: Record<string, string>; // trainee_id -> trainer_id のマップ
 }
 
 export function TrainerDetail({
   trainer,
   allTrainees,
   assignedTraineeIds: initialAssignedIds,
+  assignmentMap,
 }: TrainerDetailProps) {
   const router = useRouter();
   const [selectedTraineeIds, setSelectedTraineeIds] = useState<string[]>(initialAssignedIds);
@@ -69,7 +71,7 @@ export function TrainerDetail({
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-6">
+      <div className="mb-6 mt-4">
         <Button variant="ghost" onClick={() => router.back()}>
           ← 戻る
         </Button>
@@ -94,24 +96,36 @@ export function TrainerDetail({
           <div className="space-y-2 mb-6">
             {allTrainees.map((trainee) => {
               const isSelected = selectedTraineeIds.includes(trainee.id);
+              const currentTrainerId = assignmentMap[trainee.id];
+              const isAssignedToOther = currentTrainerId && currentTrainerId !== trainer.id;
+              const isDisabled = isAssignedToOther && !isSelected;
+
               return (
                 <label
                   key={trainee.id}
-                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
-                    isSelected
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:bg-background'
+                  className={`flex items-center p-4 border rounded-lg transition-colors ${
+                    isDisabled
+                      ? 'border-border bg-background opacity-50 cursor-not-allowed'
+                      : isSelected
+                      ? 'border-primary bg-primary/10 cursor-pointer'
+                      : 'border-border hover:bg-background cursor-pointer'
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => handleToggleTrainee(trainee.id)}
-                    className="mr-3 w-5 h-5 text-primary"
+                    disabled={isDisabled}
+                    className="mr-3 w-5 h-5 text-primary disabled:cursor-not-allowed"
                   />
                   <div className="flex-1">
                     <p className="font-medium text-text-primary">{trainee.name}</p>
                     <p className="text-sm text-text-secondary">{trainee.email}</p>
+                    {isAssignedToOther && !isSelected && (
+                      <p className="text-xs text-warning mt-1">
+                        ※ 既に他のトレーナーに紐付けられています
+                      </p>
+                    )}
                   </div>
                 </label>
               );

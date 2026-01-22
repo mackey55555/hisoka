@@ -137,7 +137,7 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-6">
+      <div className="mb-6 mt-4">
         <Button variant="ghost" onClick={() => router.back()}>
           ← 戻る
         </Button>

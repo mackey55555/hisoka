@@ -218,6 +218,30 @@ export async function getUserDetails(userId: string) {
   }
 }
 
+export async function getTraineeAssignments() {
+  const supabase = getAdminClient();
+
+  try {
+    const { data: assignments, error } = await supabase
+      .from('trainer_trainees')
+      .select('trainee_id, trainer_id');
+
+    if (error) {
+      return { data: null, error: '紐付け情報の取得に失敗しました' };
+    }
+
+    // trainee_idをキーにしたマップを作成
+    const assignmentMap = new Map<string, string>();
+    assignments?.forEach(assignment => {
+      assignmentMap.set(assignment.trainee_id, assignment.trainer_id);
+    });
+
+    return { data: assignmentMap, error: null };
+  } catch (error: any) {
+    return { data: null, error: 'エラーが発生しました: ' + (error.message || 'Unknown error') };
+  }
+}
+
 export async function assignTraineesToTrainer(trainerId: string, traineeIds: string[]) {
   const supabase = getAdminClient();
 
@@ -255,4 +279,3 @@ export async function assignTraineesToTrainer(trainerId: string, traineeIds: str
     return { error: 'エラーが発生しました: ' + (error.message || 'Unknown error') };
   }
 }
-

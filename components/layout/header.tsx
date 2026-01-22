@@ -35,16 +35,28 @@ export const Header = () => {
   }
 
   return (
-    <header className="border-b border-border bg-surface">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/dashboard" className="text-xl font-bold text-primary">
-          Hisoka
-        </Link>
-        <Button variant="ghost" onClick={handleLogout}>
-          ログアウト
-        </Button>
-      </div>
-    </header>
+    <>
+      {/* モバイル用ヘッダー（全幅） */}
+      <header className="lg:hidden border-b border-border bg-surface fixed top-0 left-0 right-0 z-30 h-16">
+        <div className="h-full flex items-center justify-between px-4">
+          <Link href="/dashboard" className="text-xl font-bold text-primary">
+            Hisoka
+          </Link>
+          <Button variant="ghost" onClick={handleLogout}>
+            ログアウト
+          </Button>
+        </div>
+      </header>
+      
+      {/* デスクトップ用ヘッダー（サイドバーの右側のみ） */}
+      <header className="hidden lg:block border-b border-border bg-surface fixed top-0 right-0 lg:left-64 z-30 h-16">
+        <div className="h-full flex items-center justify-end px-4">
+          <Button variant="ghost" onClick={handleLogout}>
+            ログアウト
+          </Button>
+        </div>
+      </header>
+    </>
   );
 };
 
