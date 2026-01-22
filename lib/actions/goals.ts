@@ -35,7 +35,7 @@ export async function createGoal(formData: FormData) {
       content: validated.data.content,
       deadline: validated.data.deadline,
       status: 'in_progress',
-    });
+    } as any);
 
   if (error) {
     return { error: '目標の作成に失敗しました' };
@@ -65,7 +65,7 @@ export async function updateGoal(id: string, formData: FormData) {
     return { error: validated.error.errors[0].message };
   }
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('goals')
     .update({
       content: validated.data.content,

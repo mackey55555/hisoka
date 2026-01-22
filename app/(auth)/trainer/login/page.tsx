@@ -39,11 +39,13 @@ export default function TrainerLoginPage() {
       .eq('id', user.id)
       .single();
 
-    const { data: roleRow } = userRow
-      ? await supabase.from('roles').select('name').eq('id', userRow.role_id).single()
+    const userRowTyped = userRow as { role_id: string } | null;
+    const { data: roleRow } = userRowTyped
+      ? await supabase.from('roles').select('name').eq('id', userRowTyped.role_id).single()
       : { data: null };
 
-    if (!userRow || roleRow?.name !== 'trainer') {
+    const roleRowTyped = roleRow as { name: string } | null;
+    if (!userRow || roleRowTyped?.name !== 'trainer') {
       setError('トレーナーアカウントでログインしてください。');
       setLoading(false);
       await supabase.auth.signOut();

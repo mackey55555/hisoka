@@ -10,7 +10,9 @@ export async function ActivityList({ goalId }: { goalId: string }) {
     .eq('goal_id', goalId)
     .order('created_at', { ascending: false });
 
-  if (!activities || activities.length === 0) {
+  const activitiesArray = (activities as Array<{ id: string; content: string; created_at: string }> | null) || [];
+
+  if (activitiesArray.length === 0) {
     return (
       <p className="text-sm text-text-secondary mt-4">
         まだ活動記録がありません
@@ -21,12 +23,14 @@ export async function ActivityList({ goalId }: { goalId: string }) {
   return (
     <div className="mt-4 space-y-3">
       {await Promise.all(
-        activities.map(async (activity) => {
+        activitiesArray.map(async (activity) => {
           const { data: reflections } = await supabase
             .from('reflections')
             .select('*')
             .eq('activity_id', activity.id)
             .order('created_at', { ascending: false });
+
+          const reflectionsArray = (reflections as Array<{ id: string; content: string; created_at: string }> | null) || [];
 
           return (
             <div
@@ -39,9 +43,9 @@ export async function ActivityList({ goalId }: { goalId: string }) {
               <p className="text-sm text-text-secondary mt-1">
                 {formatDateTime(activity.created_at)}
               </p>
-              {reflections && reflections.length > 0 && (
+              {reflectionsArray.length > 0 && (
                 <div className="mt-2 space-y-2">
-                  {reflections.map((reflection) => (
+                  {reflectionsArray.map((reflection) => (
                     <div
                       key={reflection.id}
                       className="pl-4 border-l-2 border-accent/30"

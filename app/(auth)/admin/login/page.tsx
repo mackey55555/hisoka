@@ -39,11 +39,13 @@ export default function AdminLoginPage() {
       .eq('id', user.id)
       .single();
 
-    const { data: roleRow } = userRow
-      ? await supabase.from('roles').select('name').eq('id', userRow.role_id).single()
+    const userRowTyped = userRow as { role_id: string } | null;
+    const { data: roleRow } = userRowTyped
+      ? await supabase.from('roles').select('name').eq('id', userRowTyped.role_id).single()
       : { data: null };
 
-    if (!userRow || roleRow?.name !== 'admin') {
+    const roleRowTyped = roleRow as { name: string } | null;
+    if (!userRow || roleRowTyped?.name !== 'admin') {
       setError('管理者アカウントでログインしてください。');
       setLoading(false);
       await supabase.auth.signOut();

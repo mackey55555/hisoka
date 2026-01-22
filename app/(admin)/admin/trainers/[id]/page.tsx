@@ -17,11 +17,17 @@ export default async function TrainerDetailPage({
     .single();
 
   // トレーナー情報を取得
+  if (!trainerRole) {
+    notFound();
+  }
+  
+  const trainerRoleId = (trainerRole as { id: string }).id;
+  
   const { data: trainer } = await supabase
     .from('users')
     .select('id, name, email, created_at')
     .eq('id', params.id)
-    .eq('role_id', trainerRole?.id || '')
+    .eq('role_id', trainerRoleId)
     .single();
 
   if (!trainer) {
@@ -34,7 +40,7 @@ export default async function TrainerDetailPage({
     .select('trainee_id')
     .eq('trainer_id', params.id);
 
-  const assignedTraineeIds = assignments?.map(a => a.trainee_id) || [];
+  const assignedTraineeIds = (assignments as Array<{ trainee_id: string }> | null)?.map(a => a.trainee_id) || [];
 
   // ロールIDを取得
   const { data: traineeRole } = await supabase
@@ -44,10 +50,11 @@ export default async function TrainerDetailPage({
     .single();
 
   // 全トレーニーを取得
+  const traineeRoleId = traineeRole ? (traineeRole as { id: string }).id : '';
   const { data: allTrainees } = await supabase
     .from('users')
     .select('id, name, email')
-    .eq('role_id', traineeRole?.id || '')
+    .eq('role_id', traineeRoleId)
     .order('name');
 
   // 各トレーニーの現在の紐付け状況を取得（どのトレーナーに紐付けられているか）
@@ -57,7 +64,7 @@ export default async function TrainerDetailPage({
 
   // trainee_idをキーにしたオブジェクトを作成（Mapはシリアライズできないため）
   const assignmentMap: Record<string, string> = {};
-  allAssignments?.forEach(assignment => {
+  (allAssignments as Array<{ trainee_id: string; trainer_id: string }> | null)?.forEach(assignment => {
     assignmentMap[assignment.trainee_id] = assignment.trainer_id;
   });
 

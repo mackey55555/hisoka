@@ -39,6 +39,8 @@ export default async function TraineeDetailPage({
     notFound();
   }
 
+  const traineeTyped = trainee as { id: string; name: string; email: string };
+
   // トレーニーの目標を取得
   const { data: goals } = await supabase
     .from('goals')
@@ -46,20 +48,22 @@ export default async function TraineeDetailPage({
     .eq('user_id', params.id)
     .order('created_at', { ascending: false });
 
+  const goalsArray = (goals as Array<{ id: string; content: string; deadline: string; status: string }> | null) || [];
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6 mt-4">
         <h1 className="text-2xl font-bold text-text-primary mb-2">
-          {trainee.name}さんの進捗
+          {traineeTyped.name}さんの進捗
         </h1>
-        <p className="text-text-secondary">{trainee.email}</p>
+        <p className="text-text-secondary">{traineeTyped.email}</p>
       </div>
 
       <div className="mb-6">
         <h2 className="text-xl font-bold text-text-primary mb-4">目標一覧</h2>
-        {goals && goals.length > 0 ? (
+        {goalsArray.length > 0 ? (
           <div className="space-y-4">
-            {goals.map((goal) => (
+            {goalsArray.map((goal) => (
               <Card key={goal.id}>
                 <div className="mb-4">
                   <h3 className="text-lg font-medium text-text-primary mb-2">

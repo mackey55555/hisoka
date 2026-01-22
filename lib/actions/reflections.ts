@@ -34,7 +34,7 @@ export async function createReflection(formData: FormData) {
     .eq('id', validated.data.activity_id)
     .single();
 
-  if (!activity || (activity.goals as any).user_id !== user.id) {
+  if (!activity || (activity as any).goals.user_id !== user.id) {
     return { error: '活動記録が見つかりません' };
   }
 
@@ -43,14 +43,14 @@ export async function createReflection(formData: FormData) {
     .insert({
       activity_id: validated.data.activity_id,
       content: validated.data.content,
-    });
+    } as any);
 
   if (error) {
     return { error: '振り返りの作成に失敗しました' };
   }
 
   revalidatePath('/dashboard');
-  revalidatePath(`/goals/${activity.goal_id}`);
+  revalidatePath(`/goals/${(activity as any).goal_id}`);
   return { success: true };
 }
 
@@ -74,11 +74,11 @@ export async function updateReflection(id: string, formData: FormData) {
     .eq('id', id)
     .single();
 
-  if (!reflection || (reflection.activities as any).goals.user_id !== user.id) {
+  if (!reflection || (reflection as any).activities.goals.user_id !== user.id) {
     return { error: '振り返りが見つかりません' };
   }
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('reflections')
     .update({ content })
     .eq('id', id);
@@ -87,7 +87,7 @@ export async function updateReflection(id: string, formData: FormData) {
     return { error: '振り返りの更新に失敗しました' };
   }
 
-  const activity = reflection.activities as any;
+  const activity = (reflection as any).activities;
   revalidatePath('/dashboard');
   revalidatePath(`/goals/${activity.goal_id}`);
   return { success: true };
@@ -108,7 +108,7 @@ export async function deleteReflection(id: string) {
     .eq('id', id)
     .single();
 
-  if (!reflection || (reflection.activities as any).goals.user_id !== user.id) {
+  if (!reflection || (reflection as any).activities.goals.user_id !== user.id) {
     return { error: '振り返りが見つかりません' };
   }
 
@@ -121,7 +121,7 @@ export async function deleteReflection(id: string) {
     return { error: '振り返りの削除に失敗しました' };
   }
 
-  const activity = reflection.activities as any;
+  const activity = (reflection as any).activities;
   revalidatePath('/dashboard');
   revalidatePath(`/goals/${activity.goal_id}`);
   return { success: true };

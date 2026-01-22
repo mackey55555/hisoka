@@ -56,14 +56,17 @@ export default function SignupPage() {
     }
 
     // usersテーブルに追加
+    const rolesTyped = roles as { id: string };
     const { error: userError } = await supabase
       .from('users')
-      .insert({
-        id: authData.user.id,
-        email: normalizedEmail,
-        name,
-        role_id: roles.id,
-      });
+      .insert([
+        {
+          id: authData.user.id,
+          email: normalizedEmail,
+          name,
+          role_id: rolesTyped.id,
+        },
+      ] as any);
 
     if (userError) {
       setError('ユーザー情報の登録に失敗しました');

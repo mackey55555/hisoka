@@ -27,13 +27,15 @@ export default async function MainLayout({
     redirect('/signup');
   }
 
+  const userRowTyped = userRow as { role_id: string };
   const { data: roleRow } = await supabase
     .from('roles')
     .select('name')
-    .eq('id', userRow.role_id)
+    .eq('id', userRowTyped.role_id)
     .single();
 
-  const role = roleRow?.name;
+  const roleRowTyped = roleRow as { name: string } | null;
+  const role = roleRowTyped?.name;
 
   // トレーナーや管理者の場合は適切なページにリダイレクト
   if (role === 'trainer') {

@@ -52,7 +52,8 @@ export default function UsersPage() {
       return;
     }
 
-    const roleMap = roles.reduce((acc, role) => {
+    const rolesArray = roles as Array<{ id: string; name: string }>;
+    const roleMap = rolesArray.reduce((acc, role) => {
       acc[role.id] = role.name as Role;
       return acc;
     }, {} as Record<string, Role>);
@@ -64,7 +65,8 @@ export default function UsersPage() {
       .order('created_at', { ascending: false });
 
     if (usersData) {
-      const usersWithRoles: User[] = usersData.map(user => ({
+      const usersArray = usersData as Array<{ id: string; name: string; email: string; created_at: string; role_id: string }>;
+      const usersWithRoles: User[] = usersArray.map(user => ({
         id: user.id,
         name: user.name,
         email: user.email,

@@ -41,10 +41,12 @@ export async function createActivity(formData: FormData) {
 
   const { error } = await supabase
     .from('activities')
-    .insert({
-      goal_id: validated.data.goal_id,
-      content: validated.data.content,
-    });
+    .insert([
+      {
+        goal_id: validated.data.goal_id,
+        content: validated.data.content,
+      },
+    ] as any);
 
   if (error) {
     return { error: '活動記録の作成に失敗しました' };
@@ -75,13 +77,16 @@ export async function updateActivity(id: string, formData: FormData) {
     .eq('id', id)
     .single();
 
-  if (!activity || (activity.goals as any).user_id !== user.id) {
+  const activityTyped = activity as { goal_id: string; goals: { user_id: string } } | null;
+  if (!activityTyped || activityTyped.goals.user_id !== user.id) {
     return { error: '活動記録が見つかりません' };
   }
 
-  const { error } = await supabase
+  // 新しいクライアントを使用して型エラーを回避
+  const supabaseForUpdate = await createClient();
+  const { error } = await (supabaseForUpdate as any)
     .from('activities')
-    .update({ content })
+    .update({ content: content.trim() })
     .eq('id', id);
 
   if (error) {
@@ -89,7 +94,7 @@ export async function updateActivity(id: string, formData: FormData) {
   }
 
   revalidatePath('/dashboard');
-  revalidatePath(`/goals/${activity.goal_id}`);
+  revalidatePath(`/goals/${activityTyped.goal_id}`);
   return { success: true };
 }
 
@@ -108,7 +113,8 @@ export async function deleteActivity(id: string) {
     .eq('id', id)
     .single();
 
-  if (!activity || (activity.goals as any).user_id !== user.id) {
+  const activityTyped = activity as { goal_id: string; goals: { user_id: string } } | null;
+  if (!activityTyped || activityTyped.goals.user_id !== user.id) {
     return { error: '活動記録が見つかりません' };
   }
 
@@ -122,7 +128,7 @@ export async function deleteActivity(id: string) {
   }
 
   revalidatePath('/dashboard');
-  revalidatePath(`/goals/${activity.goal_id}`);
+  revalidatePath(`/goals/${activityTyped.goal_id}`);
   return { success: true };
 }
 

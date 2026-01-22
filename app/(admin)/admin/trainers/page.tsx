@@ -14,15 +14,16 @@ export default async function TrainersPage() {
     .single();
 
   // トレーナー一覧を取得
+  const trainerRoleId = trainerRole ? (trainerRole as { id: string }).id : '';
   const { data: trainers } = await supabase
     .from('users')
     .select('id, name, email, created_at')
-    .eq('role_id', trainerRole?.id || '')
+    .eq('role_id', trainerRoleId)
     .order('created_at', { ascending: false });
 
   // 各トレーナーの担当トレーニー数を取得
   const trainersWithCounts = await Promise.all(
-    (trainers || []).map(async (trainer) => {
+    ((trainers as Array<{ id: string; name: string; email: string; created_at: string }> | null) || []).map(async (trainer) => {
       const { count } = await supabase
         .from('trainer_trainees')
         .select('*', { count: 'exact', head: true })

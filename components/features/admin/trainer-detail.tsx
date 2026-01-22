@@ -115,7 +115,7 @@ export function TrainerDetail({
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => handleToggleTrainee(trainee.id)}
-                    disabled={isDisabled}
+                    disabled={isDisabled || false}
                     className="mr-3 w-5 h-5 text-primary disabled:cursor-not-allowed"
                   />
                   <div className="flex-1">

@@ -19,9 +19,12 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single();
 
+  const userDataTyped = userData as { name: string } | null;
+
   const { data: goals } = await getGoals();
 
-  const inProgressGoals = goals?.filter(g => g.status === 'in_progress') || [];
+  const goalsArray = (goals as Array<{ id: string; content: string; deadline: string; status: string; created_at: string }> | null) || [];
+  const inProgressGoals = goalsArray.filter((g) => g.status === 'in_progress');
   const thisMonth = new Date().getMonth();
   const thisYear = new Date().getFullYear();
 
@@ -37,7 +40,7 @@ export default async function DashboardPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 mt-4">
         <h1 className="text-2xl font-bold text-text-primary mb-2">
-          こんにちは、{userData?.name || 'ユーザー'}さん
+          こんにちは、{userDataTyped?.name || 'ユーザー'}さん
         </h1>
         <p className="text-text-secondary">今日も頑張りましょう</p>
       </div>
@@ -63,9 +66,9 @@ export default async function DashboardPage() {
 
       <div className="mb-6">
         <h2 className="text-xl font-bold text-text-primary mb-4">目標一覧</h2>
-        {goals && goals.length > 0 ? (
+        {goalsArray.length > 0 ? (
           <div className="space-y-4">
-            {goals.map((goal) => {
+            {goalsArray.map((goal) => {
               const near = isDeadlineNear(goal.deadline);
               const passed = isDeadlinePassed(goal.deadline);
               

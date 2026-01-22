@@ -57,10 +57,12 @@ export default function AssignmentsPage() {
     const supabase = createClient();
     const { error } = await supabase
       .from('trainer_trainees')
-      .insert({
-        trainer_id: selectedTrainer,
-        trainee_id: selectedTrainee,
-      });
+      .insert([
+        {
+          trainer_id: selectedTrainer,
+          trainee_id: selectedTrainee,
+        },
+      ] as any);
 
     if (error) {
       alert('紐付けの作成に失敗しました: ' + error.message);
