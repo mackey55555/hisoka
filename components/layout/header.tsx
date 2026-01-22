@@ -3,19 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '../ui/button';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 
 export const Header = () => {
   const pathname = usePathname();
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
-  };
 
   const isAuthPage = pathname?.includes('/login') || pathname === '/';
 
@@ -44,18 +34,13 @@ export const Header = () => {
           <Link href="/dashboard" className="text-xl font-bold text-primary flex-1">
             Hisoka
           </Link>
-          <Button variant="ghost" onClick={handleLogout}>
-            ログアウト
-          </Button>
         </div>
       </header>
       
       {/* デスクトップ用ヘッダー（サイドバーの右側のみ） */}
       <header className="hidden lg:block border-b border-border bg-surface fixed top-0 right-0 lg:left-64 z-30 h-16">
         <div className="h-full flex items-center justify-end px-4">
-          <Button variant="ghost" onClick={handleLogout}>
-            ログアウト
-          </Button>
+          {/* ログアウトボタンはサイドメニューに移動したため、ここには何も表示しない */}
         </div>
       </header>
     </>

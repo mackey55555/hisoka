@@ -148,3 +148,28 @@ export async function getReflectionsByActivityId(activityId: string) {
   return { data, error: null };
 }
 
+export async function getReflectionsByActivityIds(activityIds: string[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { data: null, error: '認証が必要です' };
+  }
+
+  if (activityIds.length === 0) {
+    return { data: [], error: null };
+  }
+
+  const { data, error } = await supabase
+    .from('reflections')
+    .select('*')
+    .in('activity_id', activityIds)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return { data: null, error: '振り返りの取得に失敗しました' };
+  }
+
+  return { data: data || [], error: null };
+}
+

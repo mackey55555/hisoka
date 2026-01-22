@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { Modal } from '../ui/modal';
+import { Button } from '../ui/button';
+import { createClient } from '@/lib/supabase/client';
 
 interface SidebarProps {
   role: 'trainee' | 'trainer' | 'admin';
@@ -10,9 +13,18 @@ interface SidebarProps {
 
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/');
+    router.refresh();
+  };
 
   const DashboardIcon = ({ isActive }: { isActive: boolean }) => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,10 +115,11 @@ export function Sidebar({ role }: SidebarProps) {
           lg:translate-x-0
           w-64
           lg:top-0
+          flex flex-col
         `}
       >
         {/* ヘッダー部分（サイドバー上部、デスクトップのみ） */}
-        <div className="hidden lg:flex h-16 border-b border-border items-center px-6">
+        <div className="hidden lg:flex h-16 border-b border-border items-center px-6 flex-shrink-0">
           <Link 
             href={role === 'admin' ? '/admin' : role === 'trainer' ? '/trainer/dashboard' : '/dashboard'}
             onClick={() => setIsOpen(false)}
@@ -117,9 +130,8 @@ export function Sidebar({ role }: SidebarProps) {
         </div>
         
         {/* メニュー部分 */}
-        <div className="p-6 lg:pt-6 pt-20">
-
-          <nav className="space-y-2">
+        <div className="flex flex-col flex-1 overflow-y-auto p-6 lg:pt-6 pt-20">
+          <nav className="space-y-2 flex-1">
             {menuItems.map((item) => {
               const active = isActive(item.href);
               const IconComponent = item.icon;
@@ -144,8 +156,52 @@ export function Sidebar({ role }: SidebarProps) {
               );
             })}
           </nav>
+
+          {/* ログアウトボタン（一番下） */}
+          <div className="pt-4 mt-auto border-t border-border flex-shrink-0">
+            <button
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-text-primary hover:bg-background"
+            >
+              <span className="text-primary-light">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </span>
+              <span>ログアウト</span>
+            </button>
+          </div>
         </div>
       </aside>
+
+      {/* ログアウト確認モーダル */}
+      <Modal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        title="ログアウト"
+      >
+        <div className="space-y-4">
+          <p className="text-text-primary">
+            ログアウトしますか？
+          </p>
+          <div className="flex gap-4">
+            <Button
+              variant="primary"
+              onClick={handleLogout}
+              className="flex-1"
+            >
+              ログアウト
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="flex-1"
+            >
+              キャンセル
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

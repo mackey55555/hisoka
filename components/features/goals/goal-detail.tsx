@@ -16,9 +16,10 @@ import type { Goal, Activity, Reflection } from '@/types';
 interface GoalDetailProps {
   goal: Goal;
   activities: Activity[];
+  initialReflections?: Record<string, Reflection[]>;
 }
 
-export function GoalDetail({ goal, activities: initialActivities }: GoalDetailProps) {
+export function GoalDetail({ goal, activities: initialActivities, initialReflections = {} }: GoalDetailProps) {
   const router = useRouter();
   const [activities, setActivities] = useState(initialActivities);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -29,7 +30,7 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
-  const [reflections, setReflections] = useState<Record<string, Reflection[]>>({});
+  const [reflections, setReflections] = useState<Record<string, Reflection[]>>(initialReflections);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -139,37 +140,7 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
     }
   };
 
-  // 初期表示時に全ての活動記録の振り返りを読み込む
-  useEffect(() => {
-    const loadAllReflections = async () => {
-      const activityIds = activities.map(a => a.id);
-      const missingIds = activityIds.filter(id => !reflections[id]);
-      
-      if (missingIds.length === 0) return;
-      
-      const promises = missingIds.map(async (activityId) => {
-        const { data } = await getReflectionsByActivityId(activityId);
-        return { activityId, reflections: data || [] };
-      });
-      
-      const results = await Promise.all(promises);
-      const updates: Record<string, Reflection[]> = {};
-      results.forEach(result => {
-        if (result.reflections.length > 0) {
-          updates[result.activityId] = result.reflections;
-        }
-      });
-      
-      if (Object.keys(updates).length > 0) {
-        setReflections(prev => ({ ...prev, ...updates }));
-      }
-    };
-    
-    if (activities.length > 0) {
-      loadAllReflections();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activities.length]);
+  // 初期表示時の振り返り読み込みは不要（サーバーサイドで取得済み）
 
   const handleActivityEdit = (activity: Activity) => {
     setSelectedActivity(activity);

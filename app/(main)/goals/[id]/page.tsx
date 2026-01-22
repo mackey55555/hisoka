@@ -1,22 +1,52 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getGoalById } from '@/lib/actions/goals';
 import { getActivitiesByGoalId } from '@/lib/actions/activities';
-import { formatDate, formatDateTime } from '@/lib/utils/helpers';
+import { getReflectionsByActivityIds } from '@/lib/actions/reflections';
 import { GoalDetail } from '@/components/features/goals/goal-detail';
+import type { Activity, Reflection } from '@/types';
 
 export default async function GoalDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const { data: goal, error } = await getGoalById(params.id);
+  // 並列で目標と活動記録を取得
+  const [goalResult, activitiesResult] = await Promise.all([
+    getGoalById(params.id),
+    getActivitiesByGoalId(params.id),
+  ]);
+
+  const { data: goal, error } = goalResult;
 
   if (error || !goal) {
     notFound();
   }
 
-  const { data: activities } = await getActivitiesByGoalId(params.id);
+  const activities: Activity[] = (activitiesResult.data || []) as Activity[];
+  
+  // 活動記録が存在する場合、全ての振り返りを一度に取得
+  const activityIds = activities.map(a => a.id);
+  const reflectionsResult = activityIds.length > 0
+    ? await getReflectionsByActivityIds(activityIds)
+    : { data: [] };
 
-  return <GoalDetail goal={goal} activities={activities || []} />;
+  const allReflections: Reflection[] = (reflectionsResult.data || []) as Reflection[];
+
+  // 活動記録IDをキーとした振り返りのマップを作成
+  const reflectionsMap: Record<string, Reflection[]> = {};
+  allReflections.forEach(reflection => {
+    if (!reflectionsMap[reflection.activity_id]) {
+      reflectionsMap[reflection.activity_id] = [];
+    }
+    reflectionsMap[reflection.activity_id].push(reflection);
+  });
+
+  return (
+    <GoalDetail
+      goal={goal}
+      activities={activities}
+      initialReflections={reflectionsMap}
+    />
+  );
 }
 
