@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface ProgressChartsProps {
   goals: Array<{
@@ -130,7 +130,7 @@ export function ProgressCharts({ goals, activities }: ProgressChartsProps) {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+              label={false}
               outerRadius={80}
               fill="#8884d8"
               dataKey="value"
@@ -144,7 +144,24 @@ export function ProgressCharts({ goals, activities }: ProgressChartsProps) {
                 backgroundColor: '#FFFFFF', 
                 border: '1px solid #D4CFC7',
                 borderRadius: '8px'
-              }} 
+              }}
+              formatter={(value: number | undefined, name: string | undefined) => {
+                const total = statusDistribution.reduce((sum, item) => sum + item.value, 0);
+                const percent = value && total > 0 ? ((value / total) * 100).toFixed(0) : '0';
+                return [`${value || 0}件 (${percent}%)`, name || ''];
+              }}
+            />
+            <Legend 
+              verticalAlign="bottom" 
+              height={36}
+              wrapperStyle={{ fontSize: '14px' }}
+              formatter={(value: string) => {
+                const item = statusDistribution.find(d => d.name === value);
+                if (!item) return value;
+                const total = statusDistribution.reduce((sum, d) => sum + d.value, 0);
+                const percent = total > 0 ? ((item.value / total) * 100).toFixed(0) : '0';
+                return `${value} (${percent}%)`;
+              }}
             />
           </PieChart>
         </ResponsiveContainer>

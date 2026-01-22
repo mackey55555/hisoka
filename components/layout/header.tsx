@@ -38,8 +38,10 @@ export const Header = () => {
     <>
       {/* モバイル用ヘッダー（全幅） */}
       <header className="lg:hidden border-b border-border bg-surface fixed top-0 left-0 right-0 z-30 h-16">
-        <div className="h-full flex items-center justify-between px-4">
-          <Link href="/dashboard" className="text-xl font-bold text-primary">
+        <div className="h-full flex items-center gap-3 px-4">
+          {/* ハンバーガーメニューボタン用のスペース（Sidebarコンポーネントで表示） */}
+          <div className="w-10" />
+          <Link href="/dashboard" className="text-xl font-bold text-primary flex-1">
             Hisoka
           </Link>
           <Button variant="ghost" onClick={handleLogout}>

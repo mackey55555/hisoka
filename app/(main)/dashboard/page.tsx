@@ -91,17 +91,17 @@ export default async function DashboardPage() {
               const passed = isDeadlinePassed(goal.deadline);
               
               return (
-                <Card key={goal.id}>
-                  <Link href={`/goals/${goal.id}`}>
+                <Link key={goal.id} href={`/goals/${goal.id}`} className="block">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-medium text-text-primary mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-medium text-text-primary mb-2 break-words">
                           {goal.content}
                         </h3>
-                        <div className="flex items-center gap-4 text-sm text-text-secondary">
-                          <span>期限: {formatDate(goal.deadline)}</span>
+                        <div className="flex items-center gap-2 sm:gap-4 text-sm text-text-secondary flex-wrap">
+                          <span className="whitespace-nowrap">期限: {formatDate(goal.deadline)}</span>
                           <span
-                            className={`px-2 py-1 rounded ${
+                            className={`px-2 py-1 rounded whitespace-nowrap ${
                               goal.status === 'achieved'
                                 ? 'bg-success/20 text-success'
                                 : goal.status === 'cancelled'
@@ -126,8 +126,8 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                     </div>
-                  </Link>
-                </Card>
+                  </Card>
+                </Link>
               );
             })}
           </div>

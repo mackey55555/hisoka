@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -139,6 +139,38 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
     }
   };
 
+  // 初期表示時に全ての活動記録の振り返りを読み込む
+  useEffect(() => {
+    const loadAllReflections = async () => {
+      const activityIds = activities.map(a => a.id);
+      const missingIds = activityIds.filter(id => !reflections[id]);
+      
+      if (missingIds.length === 0) return;
+      
+      const promises = missingIds.map(async (activityId) => {
+        const { data } = await getReflectionsByActivityId(activityId);
+        return { activityId, reflections: data || [] };
+      });
+      
+      const results = await Promise.all(promises);
+      const updates: Record<string, Reflection[]> = {};
+      results.forEach(result => {
+        if (result.reflections.length > 0) {
+          updates[result.activityId] = result.reflections;
+        }
+      });
+      
+      if (Object.keys(updates).length > 0) {
+        setReflections(prev => ({ ...prev, ...updates }));
+      }
+    };
+    
+    if (activities.length > 0) {
+      loadAllReflections();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activities.length]);
+
   const handleActivityEdit = (activity: Activity) => {
     setSelectedActivity(activity);
     setIsActivityEditModalOpen(true);
@@ -262,15 +294,38 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
       </div>
 
       <Card className="mb-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-text-primary mb-2">
-              {goal.content}
-            </h1>
-            <div className="flex items-center gap-4 text-sm text-text-secondary">
-              <span>期限: {formatDate(goal.deadline)}</span>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2 mb-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-text-primary break-words flex-1">
+                {goal.content}
+              </h1>
+              <div className="flex gap-1 flex-shrink-0">
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="p-1.5 text-text-secondary hover:text-primary transition-colors"
+                  aria-label="編集"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="p-1.5 text-text-secondary hover:text-error transition-colors disabled:opacity-50"
+                  aria-label="削除"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4 text-sm text-text-secondary flex-wrap">
+              <span className="whitespace-nowrap">期限: {formatDate(goal.deadline)}</span>
               <span
-                className={`px-2 py-1 rounded ${
+                className={`px-2 py-1 rounded whitespace-nowrap ${
                   goal.status === 'achieved'
                     ? 'bg-success/20 text-success'
                     : goal.status === 'cancelled'
@@ -285,21 +340,6 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
                   : '進行中'}
               </span>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setIsEditModalOpen(true)}
-            >
-              編集
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={handleDelete}
-              disabled={loading}
-            >
-              削除
-            </Button>
           </div>
         </div>
       </Card>
@@ -320,34 +360,36 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
             {activities.map((activity) => (
               <Card key={activity.id}>
                 <div className="mb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-text-primary whitespace-pre-wrap">
-                        {activity.content}
-                      </p>
-                      <p className="text-sm text-text-secondary mt-2">
-                        {formatDateTime(activity.created_at)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 ml-4">
-                      <Button
-                        variant="ghost"
-                        className="text-sm"
+                  <div className="flex items-start gap-2 mb-2">
+                    <p className="text-text-primary whitespace-pre-wrap break-words flex-1">
+                      {activity.content}
+                    </p>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button
                         onClick={() => handleActivityEdit(activity)}
                         disabled={loading}
+                        className="p-1.5 text-text-secondary hover:text-primary transition-colors disabled:opacity-50"
+                        aria-label="編集"
                       >
-                        編集
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="text-sm text-error"
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
                         onClick={() => handleActivityDelete(activity.id)}
                         disabled={loading}
+                        className="p-1.5 text-text-secondary hover:text-error transition-colors disabled:opacity-50"
+                        aria-label="削除"
                       >
-                        削除
-                      </Button>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
+                  <p className="text-sm text-text-secondary whitespace-nowrap">
+                    {formatDateTime(activity.created_at)}
+                  </p>
                 </div>
                 <div>
                   <Button
@@ -368,32 +410,38 @@ export function GoalDetail({ goal, activities: initialActivities }: GoalDetailPr
                           key={reflection.id}
                           className="pl-4 border-l-2 border-primary/30"
                         >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="text-text-primary whitespace-pre-wrap">
-                                {reflection.content}
-                              </p>
-                              <p className="text-sm text-text-secondary mt-1">
+                          <div className="flex items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start gap-2 mb-1">
+                                <p className="text-text-primary whitespace-pre-wrap break-words flex-1">
+                                  {reflection.content}
+                                </p>
+                                <div className="flex gap-1 flex-shrink-0">
+                                  <button
+                                    onClick={() => handleReflectionEdit(reflection)}
+                                    disabled={loading}
+                                    className="p-1 text-text-secondary hover:text-primary transition-colors disabled:opacity-50"
+                                    aria-label="編集"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleReflectionDelete(reflection.id, activity.id)}
+                                    disabled={loading}
+                                    className="p-1 text-text-secondary hover:text-error transition-colors disabled:opacity-50"
+                                    aria-label="削除"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                              <p className="text-sm text-text-secondary whitespace-nowrap">
                                 {formatDateTime(reflection.created_at)}
                               </p>
-                            </div>
-                            <div className="flex gap-2 ml-4">
-                              <Button
-                                variant="ghost"
-                                className="text-xs"
-                                onClick={() => handleReflectionEdit(reflection)}
-                                disabled={loading}
-                              >
-                                編集
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                className="text-xs text-error"
-                                onClick={() => handleReflectionDelete(reflection.id, activity.id)}
-                                disabled={loading}
-                              >
-                                削除
-                              </Button>
                             </div>
                           </div>
                         </div>
