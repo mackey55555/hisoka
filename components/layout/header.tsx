@@ -7,7 +7,7 @@ import { Button } from '../ui/button';
 export const Header = () => {
   const pathname = usePathname();
 
-  const isAuthPage = pathname?.includes('/login') || pathname === '/';
+  const isAuthPage = pathname?.includes('/login') || pathname?.includes('/signup') || pathname === '/';
 
   if (isAuthPage) {
     return (
