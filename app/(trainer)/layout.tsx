@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { Header } from '@/components/layout/header';
 import { Sidebar } from '@/components/layout/sidebar';
+import { NavigationLoader } from '@/components/layout/navigation-loader';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
@@ -39,6 +41,9 @@ export default async function TrainerLayout({
         <Sidebar role="trainer" />
         <main className="flex-1 lg:ml-64 min-h-screen pt-16 lg:pt-16">{children}</main>
       </div>
+      <Suspense fallback={null}>
+        <NavigationLoader />
+      </Suspense>
     </>
   );
 }

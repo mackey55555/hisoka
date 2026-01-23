@@ -63,6 +63,7 @@ export function GoalsList({ initialGoals }: GoalsListProps) {
         </div>
       )}
 
+
       {/* 目標一覧 */}
       {filteredGoals.length > 0 ? (
         <div className="space-y-4">
@@ -71,7 +72,11 @@ export function GoalsList({ initialGoals }: GoalsListProps) {
             const passed = isDeadlinePassed(goal.deadline);
 
             return (
-              <Link key={goal.id} href={`/goals/${goal.id}`} className="block">
+              <Link
+                key={goal.id}
+                href={`/goals/${goal.id}`}
+                className="block"
+              >
                 <Card className="hover:shadow-md transition-shadow cursor-pointer">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
