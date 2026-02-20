@@ -166,6 +166,132 @@ export interface AnalysisResult {
   partial: boolean;
 }
 
+// トレーニー間のディレイ（レート制限回避）
+const DELAY_BETWEEN_TRAINEES_MS = 15_000;
+// リトライ時のディレイ（より長めに待つ）
+const RETRY_DELAY_MS = 30_000;
+// リトライ回数
+const MAX_RETRIES = 1;
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * 1人のトレーニーを分析する
+ */
+async function analyzeTrainee(
+  adminClient: ReturnType<typeof getAdminClient>,
+  traineeId: string,
+  year: number,
+  month: number,
+  monthStart: string,
+  nextMonthStart: string,
+  weekStart: Date,
+): Promise<'processed' | 'skipped' | 'failed'> {
+  // 今週すでに分析済みならスキップ
+  const { data: existing } = await adminClient
+    .from('ai_diagnoses')
+    .select('analyzed_at')
+    .eq('user_id', traineeId)
+    .eq('year', year)
+    .eq('month', month)
+    .single();
+
+  if (existing?.analyzed_at && new Date(existing.analyzed_at) >= weekStart) {
+    return 'skipped';
+  }
+
+  // テキスト収集
+  const text = await collectText(adminClient, traineeId, monthStart, nextMonthStart);
+
+  if (text.length < MIN_TEXT_LENGTH) {
+    return 'skipped';
+  }
+
+  // 3分析を並列実行
+  const [sentiment, personality, summary] = await Promise.all([
+    analyzeSentiment(text),
+    analyzePersonality(text),
+    generateSummary(text),
+  ]);
+
+  // 前月データを取得してトレンド算出
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const { data: prevDiagnosis } = await adminClient
+    .from('ai_diagnoses')
+    .select('sentiment_score')
+    .eq('user_id', traineeId)
+    .eq('year', prevYear)
+    .eq('month', prevMonth)
+    .single();
+
+  const trend = calcTrend(
+    sentiment.score,
+    prevDiagnosis ? Number(prevDiagnosis.sentiment_score) : null,
+  );
+
+  // ai_diagnoses に UPSERT
+  const { data: diagnosis, error: upsertError } = await adminClient
+    .from('ai_diagnoses')
+    .upsert({
+      user_id: traineeId,
+      year,
+      month,
+      sentiment_score: sentiment.score,
+      sentiment_positive_ratio: sentiment.positive_ratio,
+      sentiment_negative_ratio: sentiment.negative_ratio,
+      sentiment_neutral_ratio: sentiment.neutral_ratio,
+      sentiment_positive_keywords: sentiment.positive_keywords,
+      sentiment_negative_keywords: sentiment.negative_keywords,
+      sentiment_trend: trend,
+      personality_raw_scores: personality.rawScores,
+      personality_traits: personality.traits,
+      summary,
+      source_text_length: text.length,
+      analyzed_at: new Date().toISOString(),
+    } as any, {
+      onConflict: 'user_id,year,month',
+    })
+    .select('id')
+    .single();
+
+  if (upsertError || !diagnosis) {
+    console.error(`UPSERT失敗 (user: ${traineeId}):`, upsertError);
+    return 'failed';
+  }
+
+  // 質問サジェスト生成
+  const questions = await generateQuestions(
+    sentiment.score,
+    sentiment.positive_keywords,
+    sentiment.negative_keywords,
+    personality.traits,
+    summary,
+  );
+
+  // 既存の質問を削除して新規INSERT
+  await adminClient
+    .from('ai_question_suggests')
+    .delete()
+    .eq('diagnosis_id', diagnosis.id);
+
+  await adminClient
+    .from('ai_question_suggests')
+    .insert(
+      questions.map((q) => ({
+        diagnosis_id: diagnosis.id,
+        question: q.question,
+        category: q.category,
+        intent: q.intent,
+        priority: q.priority,
+      }))
+    );
+
+  return 'processed';
+}
+
 /**
  * 月次分析バッチのメイン処理
  */
@@ -199,126 +325,75 @@ export async function runMonthlyAnalysis(): Promise<AnalysisResult> {
   let processed = 0;
   let skipped = 0;
   let failed = 0;
+  const failedTraineeIds: string[] = [];
 
-  for (const trainee of trainees) {
-    // 残り時間チェック（30秒を切ったら中断）
-    if (Date.now() - startTime > 270_000) {
-      return {
-        processed,
-        skipped,
-        failed,
-        partial: true,
-      };
+  // --- 1st pass: 全トレーニーを順次処理（ディレイ付き） ---
+  for (let i = 0; i < trainees.length; i++) {
+    const trainee = trainees[i];
+
+    // 残り時間チェック（60秒を切ったらリトライ用に中断）
+    if (Date.now() - startTime > 240_000) {
+      // 残りを失敗扱いにせず partial で返す
+      return { processed, skipped, failed, partial: true };
     }
 
+    let needsDelay = false;
+
     try {
-      // 今週すでに分析済みならスキップ
-      const { data: existing } = await adminClient
-        .from('ai_diagnoses')
-        .select('analyzed_at')
-        .eq('user_id', trainee.id)
-        .eq('year', year)
-        .eq('month', month)
-        .single();
-
-      if (existing?.analyzed_at && new Date(existing.analyzed_at) >= weekStart) {
-        skipped++;
-        continue;
-      }
-
-      // テキスト収集
-      const text = await collectText(adminClient, trainee.id, monthStart, nextMonthStart);
-
-      if (text.length < MIN_TEXT_LENGTH) {
-        skipped++;
-        continue;
-      }
-
-      // 3分析を並列実行
-      const [sentiment, personality, summary] = await Promise.all([
-        analyzeSentiment(text),
-        analyzePersonality(text),
-        generateSummary(text),
-      ]);
-
-      // 前月データを取得してトレンド算出
-      const prevMonth = month === 1 ? 12 : month - 1;
-      const prevYear = month === 1 ? year - 1 : year;
-      const { data: prevDiagnosis } = await adminClient
-        .from('ai_diagnoses')
-        .select('sentiment_score')
-        .eq('user_id', trainee.id)
-        .eq('year', prevYear)
-        .eq('month', prevMonth)
-        .single();
-
-      const trend = calcTrend(
-        sentiment.score,
-        prevDiagnosis ? Number(prevDiagnosis.sentiment_score) : null,
+      const result = await analyzeTrainee(
+        adminClient, trainee.id, year, month, monthStart, nextMonthStart, weekStart,
       );
 
-      // ai_diagnoses に UPSERT
-      const { data: diagnosis, error: upsertError } = await adminClient
-        .from('ai_diagnoses')
-        .upsert({
-          user_id: trainee.id,
-          year,
-          month,
-          sentiment_score: sentiment.score,
-          sentiment_positive_ratio: sentiment.positive_ratio,
-          sentiment_negative_ratio: sentiment.negative_ratio,
-          sentiment_neutral_ratio: sentiment.neutral_ratio,
-          sentiment_positive_keywords: sentiment.positive_keywords,
-          sentiment_negative_keywords: sentiment.negative_keywords,
-          sentiment_trend: trend,
-          personality_raw_scores: personality.rawScores,
-          personality_traits: personality.traits,
-          summary,
-          source_text_length: text.length,
-          analyzed_at: new Date().toISOString(),
-        } as any, {
-          onConflict: 'user_id,year,month',
-        })
-        .select('id')
-        .single();
-
-      if (upsertError || !diagnosis) {
-        console.error(`UPSERT失敗 (user: ${trainee.id}):`, upsertError);
-        failed++;
-        continue;
-      }
-
-      // 質問サジェスト生成
-      const questions = await generateQuestions(
-        sentiment.score,
-        sentiment.positive_keywords,
-        sentiment.negative_keywords,
-        personality.traits,
-        summary,
-      );
-
-      // 既存の質問を削除して新規INSERT
-      await adminClient
-        .from('ai_question_suggests')
-        .delete()
-        .eq('diagnosis_id', diagnosis.id);
-
-      await adminClient
-        .from('ai_question_suggests')
-        .insert(
-          questions.map((q) => ({
-            diagnosis_id: diagnosis.id,
-            question: q.question,
-            category: q.category,
-            intent: q.intent,
-            priority: q.priority,
-          }))
-        );
-
-      processed++;
+      if (result === 'processed') { processed++; needsDelay = true; }
+      else if (result === 'skipped') skipped++;
+      else { failed++; failedTraineeIds.push(trainee.id); needsDelay = true; }
     } catch (error) {
       console.error(`分析失敗 (user: ${trainee.id}):`, error);
       failed++;
+      failedTraineeIds.push(trainee.id);
+      needsDelay = true;
+    }
+
+    // API呼び出しがあった場合のみディレイ（スキップ時は不要）
+    if (needsDelay && i < trainees.length - 1) {
+      await delay(DELAY_BETWEEN_TRAINEES_MS);
+    }
+  }
+
+  // --- 2nd pass: 失敗したトレーニーをリトライ（ディレイ付き） ---
+  if (failedTraineeIds.length > 0) {
+    console.log(`リトライ対象: ${failedTraineeIds.length}件, ${RETRY_DELAY_MS}ms 待機後に開始`);
+    await delay(RETRY_DELAY_MS);
+
+    for (let i = 0; i < failedTraineeIds.length; i++) {
+      const traineeId = failedTraineeIds[i];
+
+      if (Date.now() - startTime > 270_000) {
+        console.log('リトライ中に時間切れ、残りは次回実行で処理');
+        return { processed, skipped, failed, partial: true };
+      }
+
+      try {
+        const result = await analyzeTrainee(
+          adminClient, traineeId, year, month, monthStart, nextMonthStart, weekStart,
+        );
+
+        if (result === 'processed') {
+          processed++;
+          failed--; // 1st pass の失敗カウントを訂正
+          console.log(`リトライ成功 (user: ${traineeId})`);
+        } else if (result === 'skipped') {
+          skipped++;
+          failed--;
+        }
+      } catch (error) {
+        console.error(`リトライも失敗 (user: ${traineeId}):`, error);
+        // failed カウントは 1st pass で既に加算済み
+      }
+
+      if (i < failedTraineeIds.length - 1) {
+        await delay(RETRY_DELAY_MS);
+      }
     }
   }
 

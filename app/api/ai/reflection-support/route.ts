@@ -27,10 +27,15 @@ export async function POST(request: Request) {
     .replace('{ACTIVITY_CONTENT}', activityContent || '')
     .replace('{REFLECTION_DRAFT}', reflectionDraft || '');
 
+  // 初回リクエスト（messages空）の場合、AIに最初の問いかけを生成させる
+  const chatMessages = messages.length === 0
+    ? [{ role: 'user' as const, content: '振り返りを始めたいです。問いかけをお願いします。' }]
+    : messages;
+
   const result = streamText({
     model: getModel(),
     system: systemPrompt,
-    messages,
+    messages: chatMessages,
   });
 
   return result.toTextStreamResponse();
