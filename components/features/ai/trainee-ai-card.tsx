@@ -18,10 +18,12 @@ export function TraineeAiCard({ trainee, diagnosis }: TraineeAiCardProps) {
 
   if (!diagnosis) {
     return (
-      <Card>
-        <h3 className="text-lg font-medium text-text-primary mb-2">{trainee.name}</h3>
-        <p className="text-sm text-text-secondary">AI診断はまだありません</p>
-      </Card>
+      <Link href={`/trainer/trainees/${trainee.id}`}>
+        <Card className="hover:shadow-md transition-shadow">
+          <h3 className="text-lg font-medium text-text-primary mb-2">{trainee.name}</h3>
+          <p className="text-sm text-text-secondary">AI診断はまだありません</p>
+        </Card>
+      </Link>
     );
   }
 
@@ -37,7 +39,7 @@ export function TraineeAiCard({ trainee, diagnosis }: TraineeAiCardProps) {
     : diagnosis.summary;
 
   return (
-    <Link href={`/trainer/trainees/${trainee.id}/ai`}>
+    <Link href={`/trainer/trainees/${trainee.id}`}>
       <Card className="hover:shadow-md transition-shadow">
         <h3 className="text-lg font-medium text-text-primary mb-2">{trainee.name}</h3>
         <div className="flex items-center gap-2 mb-2">
@@ -56,7 +58,14 @@ export function TraineeAiCard({ trainee, diagnosis }: TraineeAiCardProps) {
           </ResponsiveContainer>
         )}
         <p className="text-sm text-text-secondary mt-2">{summaryPreview}</p>
-        <p className="text-xs text-primary mt-2 font-medium">AI詳細を見る →</p>
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className="inline-block mt-2"
+        >
+          <Link href={`/trainer/trainees/${trainee.id}/ai`} className="text-xs text-primary font-medium hover:underline">
+            AI詳細を見る →
+          </Link>
+        </span>
       </Card>
     </Link>
   );
