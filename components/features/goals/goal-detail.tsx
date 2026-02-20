@@ -11,6 +11,7 @@ import { formatDate, formatDateTime } from '@/lib/utils/helpers';
 import { updateGoal, deleteGoal } from '@/lib/actions/goals';
 import { createActivity, updateActivity, deleteActivity, getActivitiesByGoalId } from '@/lib/actions/activities';
 import { createReflection, updateReflection, deleteReflection, getReflectionsByActivityId } from '@/lib/actions/reflections';
+import { ReflectionChat } from '@/components/features/ai/reflection-chat';
 import type { Goal, Activity, Reflection } from '@/types';
 
 interface GoalDetailProps {
@@ -33,6 +34,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
   const [reflections, setReflections] = useState<Record<string, Reflection[]>>(initialReflections);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showAiChat, setShowAiChat] = useState(false);
 
   const handleDelete = async () => {
     if (!confirm('この目標を削除しますか？')) return;
@@ -520,6 +522,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
         onClose={() => {
           setIsReflectionModalOpen(false);
           setSelectedActivityId(null);
+          setShowAiChat(false);
         }}
         title="振り返りを追加"
       >
@@ -539,16 +542,23 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
             </Button>
             <Button
               type="button"
-              variant="secondary"
-              onClick={() => {
-                setIsReflectionModalOpen(false);
-                setSelectedActivityId(null);
-              }}
-              disabled={loading}
+              variant="ghost"
+              onClick={() => setShowAiChat(!showAiChat)}
+              className="text-primary text-sm"
             >
-              キャンセル
+              {showAiChat ? '閉じる' : '振り返りを深めるお手伝い'}
             </Button>
           </div>
+          {showAiChat && selectedActivityId && (
+            <ReflectionChat
+              goalContent={goal.content}
+              activityContent={
+                activities.find((a) => a.id === selectedActivityId)?.content || ''
+              }
+              reflectionDraft=""
+              onClose={() => setShowAiChat(false)}
+            />
+          )}
         </form>
       </Modal>
 

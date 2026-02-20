@@ -172,4 +172,3 @@ export async function getReflectionsByActivityIds(activityIds: string[]) {
 
   return { data: data || [], error: null };
 }
-
