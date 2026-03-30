@@ -32,9 +32,23 @@ export async function POST(request: Request) {
     ? [{ role: 'user' as const, content: '振り返りを始めたいです。問いかけをお願いします。' }]
     : messages;
 
+  // 最終ターン（3回目のユーザー発言後）はまとめを生成
+  const isFinalTurn = userMessages.length === 3;
+  const finalSystemPrompt = isFinalTurn
+    ? `あなたは振り返り文の作成アシスタントです。
+これまでの対話でトレーニーが語った内容を、振り返りの文章としてまとめてください。
+
+絶対ルール:
+- 質問は絶対にしないこと
+- トレーニー本人の視点（「〜しました」「〜と感じました」）で書くこと
+- 対話の中でトレーニーが語った言葉や気づきをそのまま活かすこと
+- 3〜5文程度でまとめること
+- コーチングや励ましは不要。事実と気づきだけをまとめること`
+    : systemPrompt;
+
   const result = streamText({
     model: getModel(),
-    system: systemPrompt,
+    system: finalSystemPrompt,
     messages: chatMessages,
   });
 

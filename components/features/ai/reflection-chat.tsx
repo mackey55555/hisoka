@@ -88,8 +88,8 @@ export function ReflectionChat({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent | React.KeyboardEvent | React.MouseEvent) => {
+    e?.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const userMsg: Message = { id: `user-${Date.now()}`, role: 'user', content: input.trim() };
@@ -141,23 +141,25 @@ export function ReflectionChat({
 
       {/* 入力エリア */}
       {!isMaxTurns ? (
-        <form onSubmit={handleSubmit} className="flex gap-2">
+        <div className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); handleSubmit(e); } }}
             placeholder="回答を入力..."
             disabled={isLoading}
             className="flex-1 px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
           />
           <Button
-            type="submit"
+            type="button"
             variant="primary"
             disabled={isLoading || !input.trim()}
             className="text-sm px-4"
+            onClick={handleSubmit}
           >
             送信
           </Button>
-        </form>
+        </div>
       ) : (
         <p className="text-xs text-text-secondary text-center py-2">
           対話が完了しました。上の内容を参考に振り返りを書いてみてください。
