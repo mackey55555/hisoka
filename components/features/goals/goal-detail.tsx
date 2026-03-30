@@ -203,6 +203,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
 
   const handleReflectionEdit = (reflection: Reflection) => {
     setSelectedReflection(reflection);
+    setSelectedActivityId(reflection.activity_id);
     setIsReflectionEditModalOpen(true);
   };
 
@@ -491,6 +492,10 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
         title="活動記録を追加"
       >
         <form onSubmit={handleActivitySubmit} className="space-y-4">
+          <div className="p-3 bg-bg-secondary rounded-lg text-sm">
+            <p className="text-text-secondary text-xs mb-1">目標</p>
+            <p className="text-text-primary whitespace-pre-wrap">{goal.content}</p>
+          </div>
           <Textarea
             label="活動内容"
             name="content"
@@ -527,6 +532,12 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
         title="振り返りを追加"
       >
         <form onSubmit={handleReflectionSubmit} className="space-y-4">
+          {selectedActivityId && (
+            <div className="p-3 bg-bg-secondary rounded-lg text-sm">
+              <p className="text-text-secondary text-xs mb-1">活動内容</p>
+              <p className="text-text-primary whitespace-pre-wrap">{activities.find((a) => a.id === selectedActivityId)?.content}</p>
+            </div>
+          )}
           <Textarea
             label="振り返り内容"
             name="content"
@@ -611,6 +622,12 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
         title="振り返りを編集"
       >
         <form onSubmit={handleReflectionEditSubmit} className="space-y-4">
+          {selectedActivityId && (
+            <div className="p-3 bg-bg-secondary rounded-lg text-sm">
+              <p className="text-text-secondary text-xs mb-1">活動内容</p>
+              <p className="text-text-primary whitespace-pre-wrap">{activities.find((a) => a.id === selectedActivityId)?.content}</p>
+            </div>
+          )}
           <Textarea
             label="振り返り内容"
             name="content"
