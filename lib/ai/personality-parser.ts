@@ -80,14 +80,13 @@ export function parsePersonalityResponse(text: string): PersonalityParseResult {
  */
 export function calcAllTraitScores(
   scores: Record<number, number>,
-  traits: Record<string, 'HIGH' | 'LOW'>
 ): Record<string, TraitScore> {
   const result: Record<string, TraitScore> = {};
 
   for (const trait of Object.keys(TRAIT_QUESTIONS)) {
     result[trait] = {
       score: calcTraitScore(trait, scores),
-      level: traits[trait] || (calcTraitScore(trait, scores) >= 3.0 ? 'HIGH' : 'LOW'),
+      level: calcTraitScore(trait, scores) >= 3.0 ? 'HIGH' : 'LOW',
     };
   }
 

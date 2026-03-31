@@ -112,7 +112,7 @@ assert(result.traits['curiosity'] === 'HIGH', '好奇心がHIGH');
 
 // --- テスト3: 逆転項目の反転処理 ---
 console.log('\n=== テスト3: 逆転項目の反転処理 ===');
-const allTraits = calcAllTraitScores(result.scores, result.traits);
+const allTraits = calcAllTraitScores(result.scores);
 
 // 外向性: Q1-Q10
 // Q1=3, Q2=4(→2), Q3=3, Q4=2(→4), Q5=4, Q6=2(→4), Q7=3, Q8=3(→3はreverse対象外…Q8は逆転)
