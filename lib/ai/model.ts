@@ -1,5 +1,6 @@
 import { google } from '@ai-sdk/google';
 import { anthropic } from '@ai-sdk/anthropic';
+import { bedrock } from '@ai-sdk/amazon-bedrock';
 
 export function getModel() {
   const key = process.env.AI_MODEL || 'google:gemini-2.5-flash-lite';
@@ -17,6 +18,8 @@ export function getModel() {
       return google(modelId);
     case 'anthropic':
       return anthropic(modelId);
+    case 'bedrock':
+      return bedrock(modelId);
     default:
       throw new Error(`未対応のAIプロバイダ: "${provider}"`);
   }

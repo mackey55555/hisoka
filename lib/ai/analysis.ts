@@ -100,7 +100,7 @@ async function analyzePersonality(text: string) {
     prompt,
   });
   const parsed = parsePersonalityResponse(responseText);
-  const traits = calcAllTraitScores(parsed.scores, parsed.traits);
+  const traits = calcAllTraitScores(parsed.scores);
   return { rawScores: parsed.scores, traits };
 }
 
