@@ -44,32 +44,34 @@ async function collectText(
   monthStart: string,
   nextMonthStart: string,
 ): Promise<string> {
+  // 当月に作成された activity を起点に収集し、親 goal の content を文脈として添える。
+  // goal の作成月に依存しないため、過去に立てた目標への当月の活動も分析対象になる。
   const { data } = await adminClient
-    .from('goals')
+    .from('activities')
     .select(`
       content,
-      activities (
-        content,
-        reflections ( content )
-      )
+      reflections ( content ),
+      goals!inner ( id, content, user_id )
     `)
-    .eq('user_id', traineeId)
+    .eq('goals.user_id', traineeId)
     .gte('created_at', monthStart)
     .lt('created_at', nextMonthStart);
 
   if (!data) return '';
 
   const texts: string[] = [];
-  for (const goal of data as any[]) {
-    texts.push(goal.content);
-    if (goal.activities) {
-      for (const activity of goal.activities) {
-        texts.push(activity.content);
-        if (activity.reflections) {
-          for (const reflection of activity.reflections) {
-            texts.push(reflection.content);
-          }
-        }
+  const seenGoalIds = new Set<string>();
+
+  for (const activity of data as any[]) {
+    const goal = activity.goals;
+    if (goal && !seenGoalIds.has(goal.id)) {
+      seenGoalIds.add(goal.id);
+      texts.push(goal.content);
+    }
+    texts.push(activity.content);
+    if (activity.reflections) {
+      for (const reflection of activity.reflections) {
+        texts.push(reflection.content);
       }
     }
   }
