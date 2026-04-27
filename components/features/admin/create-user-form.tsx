@@ -1,24 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
-import { createUser } from '@/lib/actions/admin';
+import { inviteUser, getTrainersForSelect } from '@/lib/actions/admin';
+
+type Trainer = { id: string; name: string; email: string };
 
 export function CreateUserForm() {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [role, setRole] = useState<string>('');
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
+
+  useEffect(() => {
+    if (isOpen && trainers.length === 0) {
+      getTrainersForSelect().then((res) => {
+        if (res.data) setTrainers(res.data as Trainer[]);
+      });
+    }
+  }, [isOpen, trainers.length]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const result = await createUser(formData);
+    const result = await inviteUser(formData);
 
     if (result.error) {
       setError(result.error);
@@ -26,27 +39,40 @@ export function CreateUserForm() {
       return;
     }
 
+    if (result.warning) {
+      setInfo(result.warning);
+      setLoading(false);
+      setTimeout(() => {
+        setIsOpen(false);
+        setInfo('');
+        window.location.reload();
+      }, 2500);
+      return;
+    }
+
     setIsOpen(false);
     setLoading(false);
-    // ページをリロードして最新のユーザー一覧を表示
     window.location.reload();
+  };
+
+  const closeModal = () => {
+    setIsOpen(false);
+    setError('');
+    setInfo('');
+    setRole('');
   };
 
   return (
     <>
       <Button variant="primary" onClick={() => setIsOpen(true)}>
-        + 新規ユーザー作成
+        + ユーザーを招待
       </Button>
 
-      <Modal
-        isOpen={isOpen}
-        onClose={() => {
-          setIsOpen(false);
-          setError('');
-        }}
-        title="新規ユーザー作成"
-      >
+      <Modal isOpen={isOpen} onClose={closeModal} title="ユーザーを招待">
         <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            入力したメールアドレスに招待メールを送信します。招待された方はメール内のリンクからパスワードを設定してログインできます。
+          </p>
           <Input
             type="text"
             label="お名前"
@@ -61,14 +87,6 @@ export function CreateUserForm() {
             required
             disabled={loading}
           />
-          <Input
-            type="password"
-            label="パスワード（8文字以上）"
-            name="password"
-            required
-            minLength={8}
-            disabled={loading}
-          />
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
               ロール
@@ -77,6 +95,8 @@ export function CreateUserForm() {
               name="role"
               required
               disabled={loading}
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
               className="w-full px-4 py-3 bg-background border border-border rounded-lg"
             >
               <option value="">選択してください</option>
@@ -85,20 +105,35 @@ export function CreateUserForm() {
               <option value="trainee">トレーニー</option>
             </select>
           </div>
-          {error && (
-            <div className="text-error text-sm">{error}</div>
+          {role === 'trainee' && (
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                担当トレーナー（任意）
+              </label>
+              <select
+                name="trainerId"
+                disabled={loading}
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg"
+              >
+                <option value="">後で紐付ける</option>
+                {trainers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}（{t.email}）
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
+          {error && <div className="text-error text-sm">{error}</div>}
+          {info && <div className="text-warning text-sm">{info}</div>}
           <div className="flex gap-4">
             <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? '作成中...' : '作成'}
+              {loading ? '送信中...' : '招待を送信'}
             </Button>
             <Button
               type="button"
               variant="secondary"
-              onClick={() => {
-                setIsOpen(false);
-                setError('');
-              }}
+              onClick={closeModal}
               disabled={loading}
             >
               キャンセル
@@ -109,4 +144,3 @@ export function CreateUserForm() {
     </>
   );
 }
-

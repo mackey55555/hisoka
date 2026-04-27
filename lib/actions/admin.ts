@@ -28,6 +28,130 @@ const createUserSchema = z.object({
   role: z.enum(['admin', 'trainer', 'trainee']),
 });
 
+const inviteUserSchema = z.object({
+  name: z.string().min(1, '名前を入力してください'),
+  email: z.string().email('有効なメールアドレスを入力してください'),
+  role: z.enum(['admin', 'trainer', 'trainee']),
+  trainerId: z.string().uuid().optional().nullable(),
+});
+
+export async function inviteUser(formData: FormData) {
+  const rawTrainerId = formData.get('trainerId') as string | null;
+  const rawData = {
+    name: formData.get('name') as string,
+    email: formData.get('email') as string,
+    role: formData.get('role') as string,
+    trainerId: rawTrainerId && rawTrainerId.length > 0 ? rawTrainerId : null,
+  };
+
+  const validated = inviteUserSchema.safeParse(rawData);
+  if (!validated.success) {
+    return { error: validated.error.errors[0].message };
+  }
+
+  const supabase = getAdminClient();
+  const normalizedEmail = validated.data.email.trim().toLowerCase();
+
+  // 招待リンクのリダイレクト先（パスワード設定ページ）
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_VERCEL_URL ||
+    'http://localhost:3000';
+  const redirectTo = `${siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`}/auth/callback?next=/auth/set-password`;
+
+  try {
+    // 1. 招待メールを送信して Auth ユーザーを作成
+    const { data: inviteData, error: inviteError } =
+      await supabase.auth.admin.inviteUserByEmail(normalizedEmail, {
+        data: { name: validated.data.name },
+        redirectTo,
+      });
+
+    if (inviteError || !inviteData.user) {
+      return {
+        error:
+          '招待の送信に失敗しました: ' +
+          (inviteError?.message || 'Unknown error'),
+      };
+    }
+
+    // 2. ロールIDを取得
+    const { data: roleData } = await supabase
+      .from('roles')
+      .select('id')
+      .eq('name', validated.data.role)
+      .single();
+
+    if (!roleData) {
+      return { error: 'ロールが見つかりません' };
+    }
+
+    // 3. users テーブルに追加
+    const { error: userError } = await supabase.from('users').insert({
+      id: inviteData.user.id,
+      email: normalizedEmail,
+      name: validated.data.name,
+      role_id: (roleData as any).id,
+    });
+
+    if (userError) {
+      return {
+        error: 'ユーザー情報の登録に失敗しました: ' + userError.message,
+      };
+    }
+
+    // 4. トレーニーで trainerId が指定されていれば trainer_trainees に紐付け
+    if (validated.data.role === 'trainee' && validated.data.trainerId) {
+      const { error: assignError } = await supabase
+        .from('trainer_trainees')
+        .insert({
+          trainer_id: validated.data.trainerId,
+          trainee_id: inviteData.user.id,
+        });
+
+      if (assignError) {
+        console.warn('トレーナー紐付けに失敗:', assignError.message);
+        // 紐付け失敗はユーザー作成自体は成功扱いにし、警告として返す
+        revalidatePath('/admin/users');
+        return {
+          success: true,
+          warning:
+            'ユーザーは招待しましたが、トレーナー紐付けに失敗しました: ' +
+            assignError.message,
+        };
+      }
+    }
+
+    revalidatePath('/admin/users');
+    revalidatePath('/admin/trainers');
+    return { success: true };
+  } catch (error: any) {
+    return {
+      error: 'エラーが発生しました: ' + (error.message || 'Unknown error'),
+    };
+  }
+}
+
+export async function getTrainersForSelect() {
+  const supabase = getAdminClient();
+  const { data: role } = await supabase
+    .from('roles')
+    .select('id')
+    .eq('name', 'trainer')
+    .single();
+
+  if (!role) return { data: [], error: null };
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, name, email')
+    .eq('role_id', (role as any).id)
+    .order('name', { ascending: true });
+
+  if (error) return { data: [], error: error.message };
+  return { data: data || [], error: null };
+}
+
 export async function createUser(formData: FormData) {
   const rawData = {
     name: formData.get('name') as string,

@@ -1,15 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/layout/header';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -80,11 +77,8 @@ export default function LoginPage() {
               {loading ? 'ログイン中...' : 'ログイン'}
             </Button>
           </form>
-          <p className="mt-6 text-center text-text-secondary text-sm">
-            アカウントをお持ちでない方は{' '}
-            <Link href="/signup" className="text-primary hover:underline">
-              新規登録
-            </Link>
+          <p className="mt-6 text-center text-text-secondary text-xs">
+            アカウントは管理者からの招待制です。メールが届いていない場合は管理者にお問い合わせください。
           </p>
         </div>
       </main>

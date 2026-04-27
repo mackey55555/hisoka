@@ -25,8 +25,8 @@ export default async function MainLayout({
     .single();
 
   if (userError || !userRow) {
-    // ユーザーデータが存在しない場合は、サインアップページに誘導
-    redirect('/signup');
+    // ユーザーデータが存在しない場合はログインへ戻す（管理者からの招待が必要）
+    redirect('/login');
   }
 
   const userRowTyped = userRow as { role_id: string };
