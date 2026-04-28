@@ -4,8 +4,13 @@ import { getGoals } from '@/lib/actions/goals';
 import { formatDate, isDeadlineNear, isDeadlinePassed } from '@/lib/utils/helpers';
 import { GoalsList } from '@/components/features/goals/goals-list';
 
-export default async function GoalsPage() {
-  const { data: goals } = await getGoals();
+export default async function GoalsPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const { data: goals } = await getGoals(slug);
 
   const goalsArray = (goals as Array<{ id: string; content: string; deadline: string; status: string; created_at: string }> | null) || [];
 

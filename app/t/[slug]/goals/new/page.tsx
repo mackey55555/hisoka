@@ -7,9 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { createGoal } from '@/lib/actions/goals';
+import { useCurrentTeam } from '@/lib/context/current-team-client';
 
 export default function NewGoalPage() {
   const router = useRouter();
+  const { slug } = useCurrentTeam();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -19,7 +21,7 @@ export default function NewGoalPage() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const result = await createGoal(formData);
+    const result = await createGoal(slug, formData);
 
     if (result.error) {
       setError(result.error);
@@ -27,8 +29,7 @@ export default function NewGoalPage() {
       return;
     }
 
-    // Server Componentsのキャッシュを確実に更新するためフルリロードで遷移
-    window.location.href = '/dashboard';
+    window.location.href = `/t/${slug}/dashboard`;
   };
 
   return (

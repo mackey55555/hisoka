@@ -9,13 +9,15 @@ import { createClient } from '@/lib/supabase/client';
 
 interface SidebarProps {
   role: 'trainee' | 'trainer' | 'admin';
+  teamSlug: string;
 }
 
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role, teamSlug }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const base = `/t/${teamSlug}`;
 
   const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
 
@@ -69,20 +71,20 @@ export function Sidebar({ role }: SidebarProps) {
   );
 
   const traineeMenuItems = [
-    { href: '/dashboard', label: 'ダッシュボード', icon: DashboardIcon },
-    { href: '/dashboard/ai', label: 'AI診断', icon: AiIcon },
-    { href: '/goals', label: '目標一覧', icon: ListIcon },
-    { href: '/goals/new', label: '新規目標', icon: PlusIcon },
+    { href: `${base}/dashboard`, label: 'ダッシュボード', icon: DashboardIcon },
+    { href: `${base}/dashboard/ai`, label: 'AI診断', icon: AiIcon },
+    { href: `${base}/goals`, label: '目標一覧', icon: ListIcon },
+    { href: `${base}/goals/new`, label: '新規目標', icon: PlusIcon },
   ];
 
   const trainerMenuItems = [
-    { href: '/trainer/dashboard', label: 'ダッシュボード', icon: DashboardIcon },
+    { href: `${base}/trainer/dashboard`, label: 'ダッシュボード', icon: DashboardIcon },
   ];
 
   const adminMenuItems = [
-    { href: '/admin', label: '管理画面', icon: HomeIcon },
-    { href: '/admin/users', label: 'ユーザー管理', icon: UsersIcon },
-    { href: '/admin/trainers', label: 'トレーナー管理', icon: TrainerIcon },
+    { href: `${base}/admin`, label: '管理画面', icon: HomeIcon },
+    { href: `${base}/admin/users`, label: 'ユーザー管理', icon: UsersIcon },
+    { href: `${base}/admin/trainers`, label: 'トレーナー管理', icon: TrainerIcon },
   ];
 
   const menuItems = role === 'admin' ? adminMenuItems : role === 'trainer' ? trainerMenuItems : traineeMenuItems;
@@ -134,8 +136,8 @@ export function Sidebar({ role }: SidebarProps) {
       >
         {/* ヘッダー部分（サイドバー上部、デスクトップのみ） */}
         <div className="hidden lg:flex h-16 border-b border-border items-center px-6 flex-shrink-0">
-          <Link 
-            href={role === 'admin' ? '/admin' : role === 'trainer' ? '/trainer/dashboard' : '/dashboard'}
+          <Link
+            href={role === 'admin' ? `${base}/admin` : role === 'trainer' ? `${base}/trainer/dashboard` : `${base}/dashboard`}
             onClick={() => setIsOpen(false)}
             className="block"
           >

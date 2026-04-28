@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { updateUser, deleteUser, getUserDetails } from '@/lib/actions/admin';
+import { updateUser, removeUserFromTeam, getUserDetails } from '@/lib/actions/admin';
 import { formatDateTime } from '@/lib/utils/helpers';
 import { createClient } from '@/lib/supabase/client';
+import { useCurrentTeam } from '@/lib/context/current-team-client';
 import type { Role } from '@/types';
 
 interface UserActionsProps {
@@ -23,6 +24,7 @@ interface UserActionsProps {
 
 export function UserActions({ user, onUpdate }: UserActionsProps) {
   const router = useRouter();
+  const { slug: teamSlug } = useCurrentTeam();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -57,7 +59,7 @@ export function UserActions({ user, onUpdate }: UserActionsProps) {
     setLoadingDetails(true);
     setError('');
 
-    const { data, error: detailError } = await getUserDetails(user.id);
+    const { data, error: detailError } = await getUserDetails(teamSlug, user.id);
     if (detailError) {
       setError(detailError);
     } else {
@@ -72,7 +74,7 @@ export function UserActions({ user, onUpdate }: UserActionsProps) {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const result = await updateUser(user.id, formData);
+    const result = await updateUser(teamSlug, user.id, formData);
 
     if (result.error) {
       setError(result.error);
@@ -89,7 +91,7 @@ export function UserActions({ user, onUpdate }: UserActionsProps) {
     setError('');
     setLoading(true);
 
-    const result = await deleteUser(user.id);
+    const result = await removeUserFromTeam(teamSlug, user.id);
 
     if (result.error) {
       setError(result.error);
@@ -129,7 +131,7 @@ export function UserActions({ user, onUpdate }: UserActionsProps) {
           <Button
             variant="ghost"
             className="text-sm px-3 py-1"
-            onClick={() => router.push(`/admin/trainers/${user.id}`)}
+            onClick={() => router.push(`/t/${teamSlug}/admin/trainers/${user.id}`)}
           >
             紐付け
           </Button>
@@ -186,8 +188,7 @@ export function UserActions({ user, onUpdate }: UserActionsProps) {
               disabled={loading}
               className="w-full px-4 py-3 bg-background border border-border rounded-lg"
             >
-              <option value="admin">管理者</option>
-              <option value="trainer">トレーナー</option>
+                  <option value="trainer">トレーナー</option>
               <option value="trainee">トレーニー</option>
             </select>
           </div>
@@ -253,7 +254,7 @@ export function UserActions({ user, onUpdate }: UserActionsProps) {
             <div>
               <p className="text-sm text-text-secondary mb-1">ロール</p>
               <p className="text-text-primary">
-                {roleLabels[(userDetails.roles as any)?.name as Role] || '不明'}
+                {roleLabels[userDetails.role as Role] || '不明'}
               </p>
             </div>
             <div>
@@ -271,7 +272,7 @@ export function UserActions({ user, onUpdate }: UserActionsProps) {
             {userDetails.assignments && (
               <div>
                 <p className="text-sm text-text-secondary mb-2">
-                  {(userDetails.roles as any)?.name === 'trainer' ? '担当トレーニー' : '担当トレーナー'}
+                  {userDetails.role === 'trainer' ? '担当トレーニー' : '担当トレーナー'}
                 </p>
                 {Array.isArray(userDetails.assignments) ? (
                   userDetails.assignments.length > 0 ? (

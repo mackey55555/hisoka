@@ -7,28 +7,30 @@ import { PersonalitySection } from '@/components/features/ai/personality-section
 import { Card } from '@/components/ui/card';
 
 interface PageProps {
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ year?: string; month?: string }>;
 }
 
-export default async function AiDashboardPage({ searchParams }: PageProps) {
-  const params = await searchParams;
+export default async function AiDashboardPage({ params, searchParams }: PageProps) {
+  const { slug } = await params;
+  const sp = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return null;
 
   const now = new Date();
-  const year = params.year ? parseInt(params.year) : now.getFullYear();
-  const month = params.month ? parseInt(params.month) : now.getMonth() + 1;
+  const year = sp.year ? parseInt(sp.year) : now.getFullYear();
+  const month = sp.month ? parseInt(sp.month) : now.getMonth() + 1;
 
   const [{ data: diagnosis }, { data: history }] = await Promise.all([
-    getMyDiagnosis(year, month),
-    getMyDiagnosisHistory(6),
+    getMyDiagnosis(slug, year, month),
+    getMyDiagnosisHistory(slug, 6),
   ]);
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <MonthNavigator year={year} month={month} basePath="/dashboard/ai" />
+      <MonthNavigator year={year} month={month} basePath={`/t/${slug}/dashboard/ai`} />
 
       {diagnosis ? (
         <>

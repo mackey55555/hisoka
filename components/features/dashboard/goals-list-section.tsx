@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { formatDate, isDeadlineNear, isDeadlinePassed } from '@/lib/utils/helpers';
+import { useCurrentTeam } from '@/lib/context/current-team-client';
 
 interface Goal {
   id: string;
@@ -17,6 +18,7 @@ interface GoalsListSectionProps {
 }
 
 export function GoalsListSection({ goals }: GoalsListSectionProps) {
+  const { slug } = useCurrentTeam();
 
   return (
     <>
@@ -32,7 +34,7 @@ export function GoalsListSection({ goals }: GoalsListSectionProps) {
               return (
                 <Link
                   key={goal.id}
-                  href={`/goals/${goal.id}`}
+                  href={`/t/${slug}/goals/${goal.id}`}
                   className="block"
                 >
                 <Card className="hover:shadow-md transition-shadow cursor-pointer">

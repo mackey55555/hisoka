@@ -4,7 +4,12 @@ import { createClient } from '@/lib/supabase/server';
 import { getAllTraineesLatestDiagnosis } from '@/lib/actions/ai';
 import { TraineeAiCard } from '@/components/features/ai/trainee-ai-card';
 
-export default async function TrainerDashboardPage() {
+export default async function TrainerDashboardPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -12,8 +17,7 @@ export default async function TrainerDashboardPage() {
     return null;
   }
 
-  // 担当トレーニーを取得
-  const { data: assignments } = await supabase
+  const { data: assignments } = await (supabase as any)
     .from('trainer_trainees')
     .select('trainee_id, trainee:users!trainer_trainees_trainee_id_fkey(id, name, email)')
     .eq('trainer_id', user.id);
@@ -24,8 +28,7 @@ export default async function TrainerDashboardPage() {
       .filter((t: any): t is { id: string; name: string; email: string } => Boolean(t?.id));
   const hasAssignmentsButNoProfiles = (assignments?.length || 0) > 0 && trainees.length === 0;
 
-  // AI診断データを取得
-  const { data: aiData } = await getAllTraineesLatestDiagnosis();
+  const { data: aiData } = await getAllTraineesLatestDiagnosis(slug);
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -8,12 +8,13 @@ import type { Activity, Reflection } from '@/types';
 export default async function GoalDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ slug: string; id: string }>;
 }) {
-  // 並列で目標と活動記録を取得
+  const { slug, id } = await params;
+
   const [goalResult, activitiesResult] = await Promise.all([
-    getGoalById(params.id),
-    getActivitiesByGoalId(params.id),
+    getGoalById(slug, id),
+    getActivitiesByGoalId(slug, id),
   ]);
 
   const { data: goal, error } = goalResult;
@@ -27,7 +28,7 @@ export default async function GoalDetailPage({
   // 活動記録が存在する場合、全ての振り返りを一度に取得
   const activityIds = activities.map(a => a.id);
   const reflectionsResult = activityIds.length > 0
-    ? await getReflectionsByActivityIds(activityIds)
+    ? await getReflectionsByActivityIds(slug, activityIds)
     : { data: [] };
 
   const allReflections: Reflection[] = (reflectionsResult.data || []) as Reflection[];

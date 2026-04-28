@@ -185,6 +185,7 @@ function delay(ms: number) {
 async function analyzeTrainee(
   adminClient: ReturnType<typeof getAdminClient>,
   traineeId: string,
+  teamId: string,
   year: number,
   month: number,
   monthStart: string,
@@ -239,6 +240,7 @@ async function analyzeTrainee(
     .from('ai_diagnoses')
     .upsert({
       user_id: traineeId,
+      team_id: teamId,
       year,
       month,
       sentiment_score: sentiment.score,
@@ -314,28 +316,31 @@ export async function runMonthlyAnalysis(): Promise<AnalysisResult> {
   weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
   weekStart.setHours(0, 0, 0, 0);
 
-  // 全トレーニーを取得
-  const { data: trainees } = await (adminClient as any)
-    .from('users')
-    .select('id, roles!inner(name)')
-    .eq('roles.name', 'trainee');
+  // 全 trainee メンバーシップを取得（複数チーム所属でもチームごとに1件処理）
+  const { data: traineeMembers } = await (adminClient as any)
+    .from('team_members')
+    .select('user_id, team_id')
+    .eq('role', 'trainee')
+    .eq('status', 'active');
 
-  if (!trainees || trainees.length === 0) {
+  if (!traineeMembers || traineeMembers.length === 0) {
     return { processed: 0, skipped: 0, failed: 0, partial: false };
   }
+
+  type Trainee = { id: string; teamId: string };
+  const trainees: Trainee[] = (traineeMembers as Array<{ user_id: string; team_id: string }>).map(
+    (m) => ({ id: m.user_id, teamId: m.team_id })
+  );
 
   let processed = 0;
   let skipped = 0;
   let failed = 0;
-  const failedTraineeIds: string[] = [];
+  const failedTrainees: Trainee[] = [];
 
-  // --- 1st pass: 全トレーニーを順次処理（ディレイ付き） ---
   for (let i = 0; i < trainees.length; i++) {
     const trainee = trainees[i];
 
-    // 残り時間チェック（60秒を切ったらリトライ用に中断）
     if (Date.now() - startTime > 240_000) {
-      // 残りを失敗扱いにせず partial で返す
       return { processed, skipped, failed, partial: true };
     }
 
@@ -343,16 +348,16 @@ export async function runMonthlyAnalysis(): Promise<AnalysisResult> {
 
     try {
       const result = await analyzeTrainee(
-        adminClient, trainee.id, year, month, monthStart, nextMonthStart, weekStart,
+        adminClient, trainee.id, trainee.teamId, year, month, monthStart, nextMonthStart, weekStart,
       );
 
       if (result === 'processed') { processed++; needsDelay = true; }
       else if (result === 'skipped') skipped++;
-      else { failed++; failedTraineeIds.push(trainee.id); needsDelay = true; }
+      else { failed++; failedTrainees.push(trainee); needsDelay = true; }
     } catch (error) {
-      console.error(`分析失敗 (user: ${trainee.id}):`, error);
+      console.error(`分析失敗 (user: ${trainee.id}, team: ${trainee.teamId}):`, error);
       failed++;
-      failedTraineeIds.push(trainee.id);
+      failedTrainees.push(trainee);
       needsDelay = true;
     }
 
@@ -363,12 +368,12 @@ export async function runMonthlyAnalysis(): Promise<AnalysisResult> {
   }
 
   // --- 2nd pass: 失敗したトレーニーをリトライ（ディレイ付き） ---
-  if (failedTraineeIds.length > 0) {
-    console.log(`リトライ対象: ${failedTraineeIds.length}件, ${RETRY_DELAY_MS}ms 待機後に開始`);
+  if (failedTrainees.length > 0) {
+    console.log(`リトライ対象: ${failedTrainees.length}件, ${RETRY_DELAY_MS}ms 待機後に開始`);
     await delay(RETRY_DELAY_MS);
 
-    for (let i = 0; i < failedTraineeIds.length; i++) {
-      const traineeId = failedTraineeIds[i];
+    for (let i = 0; i < failedTrainees.length; i++) {
+      const t = failedTrainees[i];
 
       if (Date.now() - startTime > 270_000) {
         console.log('リトライ中に時間切れ、残りは次回実行で処理');
@@ -377,23 +382,22 @@ export async function runMonthlyAnalysis(): Promise<AnalysisResult> {
 
       try {
         const result = await analyzeTrainee(
-          adminClient, traineeId, year, month, monthStart, nextMonthStart, weekStart,
+          adminClient, t.id, t.teamId, year, month, monthStart, nextMonthStart, weekStart,
         );
 
         if (result === 'processed') {
           processed++;
-          failed--; // 1st pass の失敗カウントを訂正
-          console.log(`リトライ成功 (user: ${traineeId})`);
+          failed--;
+          console.log(`リトライ成功 (user: ${t.id}, team: ${t.teamId})`);
         } else if (result === 'skipped') {
           skipped++;
           failed--;
         }
       } catch (error) {
-        console.error(`リトライも失敗 (user: ${traineeId}):`, error);
-        // failed カウントは 1st pass で既に加算済み
+        console.error(`リトライも失敗 (user: ${t.id}, team: ${t.teamId}):`, error);
       }
 
-      if (i < failedTraineeIds.length - 1) {
+      if (i < failedTrainees.length - 1) {
         await delay(RETRY_DELAY_MS);
       }
     }

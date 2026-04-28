@@ -1,405 +1,331 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { resolveTeamFromSlug, type TeamRole } from '@/lib/context/current-team';
 
-// 管理者用のSupabaseクライアント（サービスロールキー使用）
-function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const secretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!secretKey) {
-    throw new Error('SUPABASE_SECRET_KEY is required for admin operations');
-  }
+/**
+ * 旧 admin.ts の API（roles/role_id ベース）を team_members ベースに書き換えたもの。
+ * すべての関数で第1引数に teamSlug を取る。
+ */
 
-  return createClient(url, secretKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+interface ListedUser {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  role: TeamRole;
 }
 
-const createUserSchema = z.object({
-  name: z.string().min(1, '名前を入力してください'),
-  email: z.string().email('有効なメールアドレスを入力してください'),
-  password: z.string().min(8, 'パスワードは8文字以上で入力してください'),
-  role: z.enum(['admin', 'trainer', 'trainee']),
-});
-
-const inviteUserSchema = z.object({
-  name: z.string().min(1, '名前を入力してください'),
-  email: z.string().email('有効なメールアドレスを入力してください'),
-  role: z.enum(['admin', 'trainer', 'trainee']),
-  trainerId: z.string().uuid().optional().nullable(),
-});
-
-export async function inviteUser(formData: FormData) {
-  const rawTrainerId = formData.get('trainerId') as string | null;
-  const rawData = {
-    name: formData.get('name') as string,
-    email: formData.get('email') as string,
-    role: formData.get('role') as string,
-    trainerId: rawTrainerId && rawTrainerId.length > 0 ? rawTrainerId : null,
-  };
-
-  const validated = inviteUserSchema.safeParse(rawData);
-  if (!validated.success) {
-    return { error: validated.error.errors[0].message };
+/**
+ * チーム内の全メンバーを取得（admin 用ユーザー一覧）。
+ */
+export async function listTeamUsers(teamSlug: string): Promise<{
+  data: ListedUser[];
+  error?: string;
+}> {
+  const team = await resolveTeamFromSlug(teamSlug);
+  if (team.role !== 'admin' && !team.isSuperAdmin) {
+    return { data: [], error: 'チーム admin 権限が必要です' };
   }
 
-  const supabase = getAdminClient();
-  const normalizedEmail = validated.data.email.trim().toLowerCase();
+  const admin = getAdminClient();
+  const { data, error } = await admin
+    .from('team_members' as any)
+    .select('role, joined_at, users:user_id ( id, name, email, created_at )')
+    .eq('team_id', team.teamId)
+    .eq('status', 'active');
 
-  // 招待リンクのリダイレクト先（パスワード設定ページ）
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.NEXT_PUBLIC_VERCEL_URL ||
-    'http://localhost:3000';
-  const redirectTo = `${siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`}/auth/callback?next=/auth/set-password`;
+  if (error || !data) return { data: [], error: error?.message ?? 'unknown' };
 
-  try {
-    // 1. 招待メールを送信して Auth ユーザーを作成
-    const { data: inviteData, error: inviteError } =
-      await supabase.auth.admin.inviteUserByEmail(normalizedEmail, {
-        data: { name: validated.data.name },
-        redirectTo,
-      });
-
-    if (inviteError || !inviteData.user) {
-      return {
-        error:
-          '招待の送信に失敗しました: ' +
-          (inviteError?.message || 'Unknown error'),
-      };
-    }
-
-    // 2. ロールIDを取得
-    const { data: roleData } = await supabase
-      .from('roles')
-      .select('id')
-      .eq('name', validated.data.role)
-      .single();
-
-    if (!roleData) {
-      return { error: 'ロールが見つかりません' };
-    }
-
-    // 3. users テーブルに追加
-    const { error: userError } = await supabase.from('users').insert({
-      id: inviteData.user.id,
-      email: normalizedEmail,
-      name: validated.data.name,
-      role_id: (roleData as any).id,
-    });
-
-    if (userError) {
-      return {
-        error: 'ユーザー情報の登録に失敗しました: ' + userError.message,
-      };
-    }
-
-    // 4. トレーニーで trainerId が指定されていれば trainer_trainees に紐付け
-    if (validated.data.role === 'trainee' && validated.data.trainerId) {
-      const { error: assignError } = await supabase
-        .from('trainer_trainees')
-        .insert({
-          trainer_id: validated.data.trainerId,
-          trainee_id: inviteData.user.id,
-        });
-
-      if (assignError) {
-        console.warn('トレーナー紐付けに失敗:', assignError.message);
-        // 紐付け失敗はユーザー作成自体は成功扱いにし、警告として返す
-        revalidatePath('/admin/users');
-        return {
-          success: true,
-          warning:
-            'ユーザーは招待しましたが、トレーナー紐付けに失敗しました: ' +
-            assignError.message,
-        };
-      }
-    }
-
-    revalidatePath('/admin/users');
-    revalidatePath('/admin/trainers');
-    return { success: true };
-  } catch (error: any) {
-    return {
-      error: 'エラーが発生しました: ' + (error.message || 'Unknown error'),
-    };
-  }
+  const list: ListedUser[] = (data as any[])
+    .filter((row) => row.users)
+    .map((row) => ({
+      id: row.users.id,
+      name: row.users.name,
+      email: row.users.email,
+      created_at: row.users.created_at,
+      role: row.role as TeamRole,
+    }));
+  return { data: list };
 }
 
-export async function getTrainersForSelect() {
-  const supabase = getAdminClient();
-  const { data: role } = await supabase
-    .from('roles')
-    .select('id')
-    .eq('name', 'trainer')
-    .single();
+/**
+ * トレーナー一覧（select 用）。
+ */
+export async function getTrainersForSelect(teamSlug: string) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  const admin = getAdminClient();
+  const { data, error } = await admin
+    .from('team_members' as any)
+    .select('users:user_id ( id, name, email )')
+    .eq('team_id', team.teamId)
+    .eq('role', 'trainer')
+    .eq('status', 'active');
 
-  if (!role) return { data: [], error: null };
-
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, name, email')
-    .eq('role_id', (role as any).id)
-    .order('name', { ascending: true });
-
-  if (error) return { data: [], error: error.message };
-  return { data: data || [], error: null };
-}
-
-export async function createUser(formData: FormData) {
-  const rawData = {
-    name: formData.get('name') as string,
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-    role: formData.get('role') as string,
-  };
-
-  const validated = createUserSchema.safeParse(rawData);
-  if (!validated.success) {
-    return { error: validated.error.errors[0].message };
-  }
-
-  const supabase = getAdminClient();
-
-  try {
-    // 1. Authユーザーを作成
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: validated.data.email.trim().toLowerCase(),
-      password: validated.data.password,
-      email_confirm: true,
-      user_metadata: { name: validated.data.name },
-    });
-
-    if (authError || !authData.user) {
-      return { error: 'ユーザー作成に失敗しました: ' + (authError?.message || 'Unknown error') };
-    }
-
-    // 2. ロールIDを取得
-    const { data: roleData } = await supabase
-      .from('roles')
-      .select('id')
-      .eq('name', validated.data.role)
-      .single();
-
-    if (!roleData) {
-      return { error: 'ロールが見つかりません' };
-    }
-
-    // 3. usersテーブルに追加
-    const { error: userError } = await supabase
-      .from('users')
-      .insert({
-        id: authData.user.id,
-        email: validated.data.email.trim().toLowerCase(),
-        name: validated.data.name,
-        role_id: roleData.id,
-      });
-
-    if (userError) {
-      return { error: 'ユーザー情報の登録に失敗しました: ' + userError.message };
-    }
-
-    revalidatePath('/admin/users');
-    return { success: true };
-  } catch (error: any) {
-    return { error: 'エラーが発生しました: ' + (error.message || 'Unknown error') };
-  }
+  if (error || !data) return { data: [], error: error?.message ?? null };
+  const list = (data as any[])
+    .map((row) => row.users)
+    .filter((u): u is { id: string; name: string; email: string } => Boolean(u?.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return { data: list, error: null };
 }
 
 const updateUserSchema = z.object({
   name: z.string().min(1, '名前を入力してください'),
   email: z.string().email('有効なメールアドレスを入力してください'),
-  role: z.enum(['admin', 'trainer', 'trainee']),
+  role: z.enum(['trainer', 'trainee']),
 });
 
-export async function updateUser(userId: string, formData: FormData) {
+/**
+ * チーム内ユーザーの更新（名前/メール/役割/任意でパスワード）。
+ * 役割変更は admin 以外への変更のみ受ける（admin の追加は SuperAdmin のみ）。
+ */
+export async function updateUser(
+  teamSlug: string,
+  userId: string,
+  formData: FormData
+) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  if (team.role !== 'admin' && !team.isSuperAdmin) {
+    return { error: 'チーム admin 権限が必要です' };
+  }
+
   const rawData = {
     name: formData.get('name') as string,
     email: formData.get('email') as string,
     role: formData.get('role') as string,
     password: formData.get('password') as string | null,
   };
-
   const validated = updateUserSchema.safeParse(rawData);
-  if (!validated.success) {
-    return { error: validated.error.errors[0].message };
-  }
+  if (!validated.success) return { error: validated.error.errors[0].message };
 
-  const supabase = getAdminClient();
+  const admin = getAdminClient();
 
-  try {
-    // ロールIDを取得
-    const { data: roleData } = await supabase
-      .from('roles')
-      .select('id')
-      .eq('name', validated.data.role)
-      .single();
-
-    if (!roleData) {
-      return { error: 'ロールが見つかりません' };
-    }
-
-    // usersテーブルを更新
-    const { error: userError } = await supabase
-      .from('users')
-      .update({
-        name: validated.data.name,
-        email: validated.data.email.trim().toLowerCase(),
-        role_id: roleData.id,
-      })
-      .eq('id', userId);
-
-    if (userError) {
-      return { error: 'ユーザー情報の更新に失敗しました: ' + userError.message };
-    }
-
-    // Authユーザーを更新（メールアドレス、パスワード、メタデータ）
-    const updateData: any = {
+  const { error: userError } = await (admin as any)
+    .from('users')
+    .update({
+      name: validated.data.name,
       email: validated.data.email.trim().toLowerCase(),
-      user_metadata: { name: validated.data.name },
-    };
+    })
+    .eq('id', userId);
+  if (userError) return { error: 'ユーザー情報の更新に失敗しました: ' + userError.message };
 
-    // パスワードが入力されている場合のみ更新
-    if (rawData.password && rawData.password.trim().length >= 8) {
-      updateData.password = rawData.password;
-    }
+  const { error: tmError } = await (admin
+    .from('team_members' as any) as any)
+    .update({ role: validated.data.role })
+    .eq('team_id', team.teamId)
+    .eq('user_id', userId);
+  if (tmError) return { error: 'ロール更新に失敗しました: ' + tmError.message };
 
-    const { error: authError } = await supabase.auth.admin.updateUserById(userId, updateData);
-
-    if (authError) {
-      // Authの更新に失敗してもusersテーブルの更新は成功しているので警告のみ
-      console.warn('Authユーザーの更新に失敗しました:', authError.message);
-      if (rawData.password) {
-        return { error: 'パスワードの更新に失敗しました: ' + authError.message };
-      }
-    }
-
-    revalidatePath('/admin/users');
-    return { success: true };
-  } catch (error: any) {
-    return { error: 'エラーが発生しました: ' + (error.message || 'Unknown error') };
+  const updateData: any = {
+    email: validated.data.email.trim().toLowerCase(),
+    user_metadata: { name: validated.data.name },
+  };
+  if (rawData.password && rawData.password.trim().length >= 8) {
+    updateData.password = rawData.password;
   }
+  const { error: authError } = await admin.auth.admin.updateUserById(
+    userId,
+    updateData
+  );
+  if (authError && rawData.password) {
+    return { error: 'パスワード更新に失敗しました: ' + authError.message };
+  }
+
+  revalidatePath(`/t/${team.slug}/admin/users`);
+  return { success: true };
 }
 
-export async function deleteUser(userId: string) {
-  const supabase = getAdminClient();
-
-  try {
-    // Authユーザーを削除（CASCADEでusersテーブルも自動削除される）
-    const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
-
-    if (deleteError) {
-      return { error: 'ユーザーの削除に失敗しました: ' + deleteError.message };
-    }
-
-    revalidatePath('/admin/users');
-    return { success: true };
-  } catch (error: any) {
-    return { error: 'エラーが発生しました: ' + (error.message || 'Unknown error') };
+/**
+ * チームからユーザーを除外する（auth.users は残す）。
+ * SaaS 化以降「ユーザーの削除」=「特定チームから外す」の意味に変わったため改称。
+ */
+export async function removeUserFromTeam(teamSlug: string, userId: string) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  if (team.role !== 'admin' && !team.isSuperAdmin) {
+    return { error: 'チーム admin 権限が必要です' };
   }
+
+  const admin = getAdminClient();
+  const { error } = await admin
+    .from('team_members' as any)
+    .delete()
+    .eq('team_id', team.teamId)
+    .eq('user_id', userId);
+  if (error) return { error: '除外に失敗しました: ' + error.message };
+
+  revalidatePath(`/t/${team.slug}/admin/users`);
+  return { success: true };
 }
 
-export async function getUserDetails(userId: string) {
-  const supabase = getAdminClient();
+/**
+ * ユーザー詳細（チームスコープ）。
+ */
+export async function getUserDetails(teamSlug: string, userId: string) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  const admin = getAdminClient();
 
-  try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, name, email, created_at, updated_at, role_id, roles(name)')
-      .eq('id', userId)
-      .single();
+  const { data: userRow, error } = await admin
+    .from('users')
+    .select('id, name, email, created_at, updated_at')
+    .eq('id', userId)
+    .single();
+  if (error || !userRow) return { data: null, error: 'ユーザーが見つかりません' };
+  const user = userRow as {
+    id: string;
+    name: string;
+    email: string;
+    created_at: string;
+    updated_at: string;
+  };
 
-    if (error || !user) {
-      return { data: null, error: 'ユーザー情報の取得に失敗しました' };
-    }
+  const { data: memberRow } = await admin
+    .from('team_members' as any)
+    .select('role')
+    .eq('team_id', team.teamId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  const role = (memberRow as any)?.role as TeamRole | undefined;
 
-    // 紐付け情報を取得（トレーナーの場合）
-    let assignments = null;
-    if ((user.roles as any)?.name === 'trainer') {
-      const { data: trainerAssignments } = await supabase
-        .from('trainer_trainees')
-        .select('trainee_id, trainee:users!trainer_trainees_trainee_id_fkey(id, name, email)')
-        .eq('trainer_id', userId);
-      assignments = trainerAssignments;
-    } else if ((user.roles as any)?.name === 'trainee') {
-      const { data: traineeAssignment } = await supabase
-        .from('trainer_trainees')
-        .select('trainer_id, trainer:users!trainer_trainees_trainer_id_fkey(id, name, email)')
-        .eq('trainee_id', userId)
-        .single();
-      assignments = traineeAssignment;
-    }
-
-    return { data: { ...user, assignments }, error: null };
-  } catch (error: any) {
-    return { data: null, error: 'エラーが発生しました: ' + (error.message || 'Unknown error') };
-  }
-}
-
-export async function getTraineeAssignments() {
-  const supabase = getAdminClient();
-
-  try {
-    const { data: assignments, error } = await supabase
+  let assignments: any = null;
+  if (role === 'trainer') {
+    const { data } = await admin
       .from('trainer_trainees')
-      .select('trainee_id, trainer_id');
-
-    if (error) {
-      return { data: null, error: '紐付け情報の取得に失敗しました' };
-    }
-
-    // trainee_idをキーにしたマップを作成
-    const assignmentMap = new Map<string, string>();
-    assignments?.forEach(assignment => {
-      assignmentMap.set(assignment.trainee_id, assignment.trainer_id);
-    });
-
-    return { data: assignmentMap, error: null };
-  } catch (error: any) {
-    return { data: null, error: 'エラーが発生しました: ' + (error.message || 'Unknown error') };
+      .select(
+        'trainee_id, trainee:users!trainer_trainees_trainee_id_fkey(id, name, email)'
+      )
+      .eq('trainer_id', userId)
+      .eq('team_id', team.teamId);
+    assignments = data;
+  } else if (role === 'trainee') {
+    const { data } = await admin
+      .from('trainer_trainees')
+      .select(
+        'trainer_id, trainer:users!trainer_trainees_trainer_id_fkey(id, name, email)'
+      )
+      .eq('trainee_id', userId)
+      .eq('team_id', team.teamId)
+      .maybeSingle();
+    assignments = data;
   }
+
+  return { data: { ...user, role, assignments }, error: null };
 }
 
-export async function assignTraineesToTrainer(trainerId: string, traineeIds: string[]) {
-  const supabase = getAdminClient();
+/**
+ * チーム内のトレーニーアサインメントマップ（trainee_id → trainer_id）。
+ */
+export async function getTraineeAssignments(teamSlug: string) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  const admin = getAdminClient();
+  const { data, error } = await admin
+    .from('trainer_trainees')
+    .select('trainee_id, trainer_id')
+    .eq('team_id', team.teamId);
+  if (error) return { data: null, error: '紐付け情報の取得に失敗しました' };
 
-  try {
-    // 既存の紐付けを削除
-    const { error: deleteError } = await supabase
-      .from('trainer_trainees')
-      .delete()
-      .eq('trainer_id', trainerId);
+  const map = new Map<string, string>();
+  (data as any[] | null)?.forEach((a) => {
+    map.set(a.trainee_id, a.trainer_id);
+  });
+  return { data: map, error: null };
+}
 
-    if (deleteError) {
-      return { error: '既存の紐付け削除に失敗しました: ' + deleteError.message };
-    }
+/**
+ * チーム内の既存 trainer-trainee アサイン一覧。
+ */
+export async function listTeamAssignments(teamSlug: string) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  const admin = getAdminClient();
+  const { data, error } = await admin
+    .from('trainer_trainees')
+    .select(
+      'id, created_at, trainer:users!trainer_trainees_trainer_id_fkey(id, name, email), trainee:users!trainer_trainees_trainee_id_fkey(id, name, email)'
+    )
+    .eq('team_id', team.teamId)
+    .order('created_at', { ascending: false });
+  if (error) return { data: [], error: error.message };
+  return { data: data ?? [], error: null };
+}
 
-    // 新しい紐付けを作成
-    if (traineeIds.length > 0) {
-      const assignments = traineeIds.map(traineeId => ({
-        trainer_id: trainerId,
-        trainee_id: traineeId,
-      }));
-
-      const { error: insertError } = await supabase
-        .from('trainer_trainees')
-        .insert(assignments);
-
-      if (insertError) {
-        return { error: '紐付けの作成に失敗しました: ' + insertError.message };
-      }
-    }
-
-    revalidatePath('/admin/trainers');
-    revalidatePath(`/admin/trainers/${trainerId}`);
-    return { success: true };
-  } catch (error: any) {
-    return { error: 'エラーが発生しました: ' + (error.message || 'Unknown error') };
+/**
+ * 単一の trainer-trainee アサインメント作成。
+ */
+export async function createAssignment(
+  teamSlug: string,
+  trainerId: string,
+  traineeId: string
+) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  if (team.role !== 'admin' && !team.isSuperAdmin) {
+    return { error: 'チーム admin 権限が必要です' };
   }
+  const admin = getAdminClient();
+  const { error } = await (admin
+    .from('trainer_trainees') as any)
+    .insert({ trainer_id: trainerId, trainee_id: traineeId, team_id: team.teamId });
+  if (error) return { error: '紐付け作成に失敗しました: ' + error.message };
+
+  revalidatePath(`/t/${team.slug}/admin/assignments`);
+  return { success: true };
+}
+
+/**
+ * アサインメント削除。
+ */
+export async function removeAssignment(teamSlug: string, assignmentId: string) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  if (team.role !== 'admin' && !team.isSuperAdmin) {
+    return { error: 'チーム admin 権限が必要です' };
+  }
+  const admin = getAdminClient();
+  const { error } = await admin
+    .from('trainer_trainees')
+    .delete()
+    .eq('id', assignmentId)
+    .eq('team_id', team.teamId);
+  if (error) return { error: '削除に失敗しました: ' + error.message };
+
+  revalidatePath(`/t/${team.slug}/admin/assignments`);
+  return { success: true };
+}
+
+/**
+ * 既存トレーナーに対し、担当トレーニーを再アサインする。
+ */
+export async function assignTraineesToTrainer(
+  teamSlug: string,
+  trainerId: string,
+  traineeIds: string[]
+) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  if (team.role !== 'admin' && !team.isSuperAdmin) {
+    return { error: 'チーム admin 権限が必要です' };
+  }
+
+  const admin = getAdminClient();
+  const { error: deleteError } = await admin
+    .from('trainer_trainees')
+    .delete()
+    .eq('team_id', team.teamId)
+    .eq('trainer_id', trainerId);
+  if (deleteError) return { error: '既存の紐付け削除に失敗しました: ' + deleteError.message };
+
+  if (traineeIds.length > 0) {
+    const rows = traineeIds.map((tid) => ({
+      trainer_id: trainerId,
+      trainee_id: tid,
+      team_id: team.teamId,
+    }));
+    const { error: insertError } = await (admin
+      .from('trainer_trainees') as any)
+      .insert(rows);
+    if (insertError) return { error: '紐付けの作成に失敗しました: ' + insertError.message };
+  }
+
+  revalidatePath(`/t/${team.slug}/admin/trainers`);
+  revalidatePath(`/t/${team.slug}/admin/trainers/${trainerId}`);
+  return { success: true };
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Header } from '@/components/layout/header';
+import { PublicHeader } from '@/components/layout/public-header';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
@@ -37,12 +37,15 @@ export default function LoginPage() {
     }
 
     // セッションを確実に確立するために、完全なページリロードを行う
-    window.location.href = '/dashboard';
+    // ルート遷移ロジック (app/page.tsx) で適切なチームへ振り分け
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next');
+    window.location.href = next && next.startsWith('/') ? next : '/';
   };
 
   return (
     <>
-      <Header />
+      <PublicHeader showLogin={false} />
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <h1 className="text-3xl font-bold text-text-primary mb-8 text-center">

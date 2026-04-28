@@ -2,22 +2,22 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { AiDiagnosis, AiQuestionSuggest } from '@/types';
+import { resolveTeamFromSlug } from '@/lib/context/current-team';
 
 /**
  * トレーニー: 自分の月次診断を取得
  */
-export async function getMyDiagnosis(year: number, month: number) {
+export async function getMyDiagnosis(teamSlug: string, year: number, month: number) {
+  const team = await resolveTeamFromSlug(teamSlug);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { data: null, error: '認証が必要です' };
-  }
+  if (!user) return { data: null, error: '認証が必要です' };
 
   const { data, error } = await supabase
     .from('ai_diagnoses')
     .select('*')
     .eq('user_id', user.id)
+    .eq('team_id', team.teamId)
     .eq('year', year)
     .eq('month', month)
     .single();
@@ -25,26 +25,22 @@ export async function getMyDiagnosis(year: number, month: number) {
   if (error && error.code !== 'PGRST116') {
     return { data: null, error: '診断データの取得に失敗しました' };
   }
-
   return { data: data as AiDiagnosis | null, error: null };
 }
 
 /**
  * トレーニー: 推移グラフ用に直近Nヶ月の診断を取得
  */
-export async function getMyDiagnosisHistory(months: number = 6) {
+export async function getMyDiagnosisHistory(teamSlug: string, months: number = 6) {
+  const team = await resolveTeamFromSlug(teamSlug);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { data: null, error: '認証が必要です' };
-  }
+  if (!user) return { data: null, error: '認証が必要です' };
 
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  // Nヶ月前の年月を計算
   let startYear = currentYear;
   let startMonth = currentMonth - months + 1;
   if (startMonth <= 0) {
@@ -56,6 +52,7 @@ export async function getMyDiagnosisHistory(months: number = 6) {
     .from('ai_diagnoses')
     .select('*')
     .eq('user_id', user.id)
+    .eq('team_id', team.teamId)
     .or(
       Array.from({ length: months }, (_, i) => {
         let m = startMonth + i;
@@ -67,28 +64,29 @@ export async function getMyDiagnosisHistory(months: number = 6) {
     .order('year', { ascending: true })
     .order('month', { ascending: true });
 
-  if (error) {
-    return { data: null, error: '診断履歴の取得に失敗しました' };
-  }
-
+  if (error) return { data: null, error: '診断履歴の取得に失敗しました' };
   return { data: (data || []) as AiDiagnosis[], error: null };
 }
 
 /**
  * トレーナー: 担当トレーニーの月次診断を取得
  */
-export async function getTraineeDiagnosis(traineeId: string, year: number, month: number) {
+export async function getTraineeDiagnosis(
+  teamSlug: string,
+  traineeId: string,
+  year: number,
+  month: number
+) {
+  const team = await resolveTeamFromSlug(teamSlug);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { data: null, error: '認証が必要です' };
-  }
+  if (!user) return { data: null, error: '認証が必要です' };
 
   const { data, error } = await supabase
     .from('ai_diagnoses')
     .select('*')
     .eq('user_id', traineeId)
+    .eq('team_id', team.teamId)
     .eq('year', year)
     .eq('month', month)
     .single();
@@ -96,26 +94,23 @@ export async function getTraineeDiagnosis(traineeId: string, year: number, month
   if (error && error.code !== 'PGRST116') {
     return { data: null, error: '診断データの取得に失敗しました' };
   }
-
   return { data: data as AiDiagnosis | null, error: null };
 }
 
 /**
  * トレーナー: 担当全トレーニーの最新診断（サマリーカード用）
  */
-export async function getAllTraineesLatestDiagnosis() {
+export async function getAllTraineesLatestDiagnosis(teamSlug: string) {
+  const team = await resolveTeamFromSlug(teamSlug);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: '認証が必要です' };
 
-  if (!user) {
-    return { data: null, error: '認証が必要です' };
-  }
-
-  // 担当トレーニーを取得
   const { data: assignments } = await (supabase as any)
     .from('trainer_trainees')
     .select('trainee_id, trainee:users!trainer_trainees_trainee_id_fkey(id, name)')
-    .eq('trainer_id', user.id);
+    .eq('trainer_id', user.id)
+    .eq('team_id', team.teamId);
 
   if (!assignments || assignments.length === 0) {
     return { data: [], error: null };
@@ -123,15 +118,14 @@ export async function getAllTraineesLatestDiagnosis() {
 
   const traineeIds = assignments.map((a: any) => a.trainee_id);
 
-  // 各トレーニーの最新診断を取得
   const { data: diagnoses } = await supabase
     .from('ai_diagnoses')
     .select('*')
     .in('user_id', traineeIds)
+    .eq('team_id', team.teamId)
     .order('year', { ascending: false })
     .order('month', { ascending: false });
 
-  // トレーニーごとに最新の1件のみ残す
   const latestByUser = new Map<string, AiDiagnosis>();
   for (const d of (diagnoses || []) as AiDiagnosis[]) {
     if (!latestByUser.has(d.user_id)) {
@@ -150,23 +144,19 @@ export async function getAllTraineesLatestDiagnosis() {
 /**
  * トレーナー: 質問サジェスト取得
  */
-export async function getQuestionSuggests(diagnosisId: string) {
+export async function getQuestionSuggests(teamSlug: string, diagnosisId: string) {
+  await resolveTeamFromSlug(teamSlug);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: '認証が必要です' };
 
-  if (!user) {
-    return { data: null, error: '認証が必要です' };
-  }
-
+  // diagnosis_id 経由で team_id 検証は RLS に任せる
   const { data, error } = await supabase
     .from('ai_question_suggests')
     .select('*')
     .eq('diagnosis_id', diagnosisId)
     .order('priority', { ascending: true });
 
-  if (error) {
-    return { data: null, error: '質問サジェストの取得に失敗しました' };
-  }
-
+  if (error) return { data: null, error: '質問サジェストの取得に失敗しました' };
   return { data: (data || []) as AiQuestionSuggest[], error: null };
 }

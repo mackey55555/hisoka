@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { assignTraineesToTrainer } from '@/lib/actions/admin';
+import { useCurrentTeam } from '@/lib/context/current-team-client';
 
 interface TrainerDetailProps {
   trainer: {
@@ -29,6 +30,7 @@ export function TrainerDetail({
   assignmentMap,
 }: TrainerDetailProps) {
   const router = useRouter();
+  const { slug } = useCurrentTeam();
   const [selectedTraineeIds, setSelectedTraineeIds] = useState<string[]>(initialAssignedIds);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -53,7 +55,7 @@ export function TrainerDetail({
     setSuccess(false);
     setLoading(true);
 
-    const result = await assignTraineesToTrainer(trainer.id, selectedTraineeIds);
+    const result = await assignTraineesToTrainer(slug, trainer.id, selectedTraineeIds);
 
     if (result.error) {
       setError(result.error);

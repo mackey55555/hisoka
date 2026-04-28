@@ -20,7 +20,7 @@ export default function AuthCallbackPage() {
 
     const searchParams = new URLSearchParams(window.location.search);
     const code = searchParams.get('code');
-    const defaultNext = isInvite ? '/auth/set-password' : '/dashboard';
+    const defaultNext = isInvite ? '/auth/set-password' : '/';
     const next = searchParams.get('next') || defaultNext;
 
     (async () => {

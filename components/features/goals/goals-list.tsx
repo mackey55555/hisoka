@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { formatDate, isDeadlineNear, isDeadlinePassed } from '@/lib/utils/helpers';
+import { useCurrentTeam } from '@/lib/context/current-team-client';
 
 interface Goal {
   id: string;
@@ -19,6 +20,7 @@ interface GoalsListProps {
 }
 
 export function GoalsList({ initialGoals }: GoalsListProps) {
+  const { slug } = useCurrentTeam();
   const [searchQuery, setSearchQuery] = useState('');
 
   // 検索フィルタリング
@@ -74,7 +76,7 @@ export function GoalsList({ initialGoals }: GoalsListProps) {
             return (
               <Link
                 key={goal.id}
-                href={`/goals/${goal.id}`}
+                href={`/t/${slug}/goals/${goal.id}`}
                 className="block"
               >
                 <Card className="hover:shadow-md transition-shadow cursor-pointer">

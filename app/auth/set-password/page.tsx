@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Header } from '@/components/layout/header';
+import { PublicHeader } from '@/components/layout/public-header';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SetPasswordPage() {
@@ -49,13 +49,16 @@ export default function SetPasswordPage() {
       return;
     }
 
-    window.location.href = '/dashboard';
+    // ?next= で遷移先を尊重（招待受諾フローで /t/<slug>/dashboard が渡される）
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next');
+    window.location.href = next && next.startsWith('/') ? next : '/';
   };
 
   if (checkingSession) {
     return (
       <>
-        <Header />
+        <PublicHeader showLogin={false} />
         <main className="min-h-screen flex items-center justify-center px-4">
           <p className="text-text-secondary">読み込み中...</p>
         </main>
@@ -65,7 +68,7 @@ export default function SetPasswordPage() {
 
   return (
     <>
-      <Header />
+      <PublicHeader showLogin={false} />
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <h1 className="text-3xl font-bold text-text-primary mb-4 text-center">

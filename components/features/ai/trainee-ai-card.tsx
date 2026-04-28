@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import type { AiDiagnosis, TraitKey } from '@/types';
 import { TRAIT_LABELS } from '@/types';
+import { useCurrentTeam } from '@/lib/context/current-team-client';
 
 interface TraineeAiCardProps {
   trainee: { id: string; name: string };
@@ -13,12 +14,13 @@ interface TraineeAiCardProps {
 }
 
 export function TraineeAiCard({ trainee, diagnosis }: TraineeAiCardProps) {
+  const { slug } = useCurrentTeam();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
   if (!diagnosis) {
     return (
-      <Link href={`/trainer/trainees/${trainee.id}`}>
+      <Link href={`/t/${slug}/trainer/trainees/${trainee.id}`}>
         <Card className="hover:shadow-md transition-shadow">
           <h3 className="text-lg font-medium text-text-primary mb-2">{trainee.name}</h3>
           <p className="text-sm text-text-secondary">AI診断はまだありません</p>
@@ -39,7 +41,7 @@ export function TraineeAiCard({ trainee, diagnosis }: TraineeAiCardProps) {
     : diagnosis.summary;
 
   return (
-    <Link href={`/trainer/trainees/${trainee.id}`}>
+    <Link href={`/t/${slug}/trainer/trainees/${trainee.id}`}>
       <Card className="hover:shadow-md transition-shadow">
         <h3 className="text-lg font-medium text-text-primary mb-2">{trainee.name}</h3>
         <div className="flex items-center gap-2 mb-2">
@@ -62,7 +64,7 @@ export function TraineeAiCard({ trainee, diagnosis }: TraineeAiCardProps) {
           onClick={(e) => e.stopPropagation()}
           className="inline-block mt-2"
         >
-          <Link href={`/trainer/trainees/${trainee.id}/ai`} className="text-xs text-primary font-medium hover:underline">
+          <Link href={`/t/${slug}/trainer/trainees/${trainee.id}/ai`} className="text-xs text-primary font-medium hover:underline">
             AI詳細を見る →
           </Link>
         </span>

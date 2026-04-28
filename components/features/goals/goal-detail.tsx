@@ -12,6 +12,7 @@ import { updateGoal, deleteGoal } from '@/lib/actions/goals';
 import { createActivity, updateActivity, deleteActivity, getActivitiesByGoalId } from '@/lib/actions/activities';
 import { createReflection, updateReflection, deleteReflection, getReflectionsByActivityId } from '@/lib/actions/reflections';
 import { ReflectionChat } from '@/components/features/ai/reflection-chat';
+import { useCurrentTeam } from '@/lib/context/current-team-client';
 import type { Goal, Activity, Reflection } from '@/types';
 
 interface GoalDetailProps {
@@ -22,6 +23,7 @@ interface GoalDetailProps {
 
 export function GoalDetail({ goal, activities: initialActivities, initialReflections = {} }: GoalDetailProps) {
   const router = useRouter();
+  const { slug: teamSlug } = useCurrentTeam();
   const [activities, setActivities] = useState(initialActivities);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
@@ -40,16 +42,15 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
     if (!confirm('この目標を削除しますか？')) return;
 
     setLoading(true);
-    const result = await deleteGoal(goal.id);
-    
+    const result = await deleteGoal(teamSlug, goal.id);
+
     if (result.error) {
       setError(result.error);
       setLoading(false);
       return;
     }
 
-    // Server Componentsのキャッシュを確実に更新するためフルリロードで遷移
-    window.location.href = '/dashboard';
+    window.location.href = `/t/${teamSlug}/dashboard`;
   };
 
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -58,7 +59,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const result = await updateGoal(goal.id, formData);
+    const result = await updateGoal(teamSlug, goal.id, formData);
 
     if (result.error) {
       setError(result.error);
@@ -78,7 +79,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
     const form = e.currentTarget;
     const formData = new FormData(form);
     formData.set('goal_id', goal.id);
-    const result = await createActivity(formData);
+    const result = await createActivity(teamSlug, formData);
 
     if (result.error) {
       setError(result.error);
@@ -86,8 +87,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
       return;
     }
 
-    // 最新の活動記録を取得して状態を更新
-    const { data: updatedActivities } = await getActivitiesByGoalId(goal.id);
+    const { data: updatedActivities } = await getActivitiesByGoalId(teamSlug, goal.id);
     if (updatedActivities) {
       setActivities(updatedActivities);
     }
@@ -110,7 +110,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
     const form = e.currentTarget;
     const formData = new FormData(form);
     formData.set('activity_id', selectedActivityId);
-    const result = await createReflection(formData);
+    const result = await createReflection(teamSlug, formData);
 
     if (result.error) {
       setError(result.error);
@@ -118,8 +118,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
       return;
     }
 
-    // 最新の振り返りを取得して状態を更新
-    const { data: updatedReflections } = await getReflectionsByActivityId(selectedActivityId);
+    const { data: updatedReflections } = await getReflectionsByActivityId(teamSlug, selectedActivityId);
     if (updatedReflections) {
       setReflections(prev => ({ ...prev, [selectedActivityId]: updatedReflections }));
     }
@@ -136,7 +135,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
   const loadReflections = async (activityId: string) => {
     if (reflections[activityId]) return;
 
-    const { data } = await getReflectionsByActivityId(activityId);
+    const { data } = await getReflectionsByActivityId(teamSlug, activityId);
     if (data) {
       setReflections(prev => ({ ...prev, [activityId]: data }));
     }
@@ -158,7 +157,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
 
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const result = await updateActivity(selectedActivity.id, formData);
+    const result = await updateActivity(teamSlug, selectedActivity.id, formData);
 
     if (result.error) {
       setError(result.error);
@@ -166,8 +165,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
       return;
     }
 
-    // 最新の活動記録を取得して状態を更新
-    const { data: updatedActivities } = await getActivitiesByGoalId(goal.id);
+    const { data: updatedActivities } = await getActivitiesByGoalId(teamSlug, goal.id);
     if (updatedActivities) {
       setActivities(updatedActivities);
     }
@@ -184,7 +182,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
     if (!confirm('この活動記録を削除しますか？')) return;
 
     setLoading(true);
-    const result = await deleteActivity(activityId);
+    const result = await deleteActivity(teamSlug, activityId);
 
     if (result.error) {
       setError(result.error);
@@ -192,8 +190,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
       return;
     }
 
-    // 最新の活動記録を取得して状態を更新
-    const { data: updatedActivities } = await getActivitiesByGoalId(goal.id);
+    const { data: updatedActivities } = await getActivitiesByGoalId(teamSlug, goal.id);
     if (updatedActivities) {
       setActivities(updatedActivities);
     }
@@ -216,7 +213,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
 
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const result = await updateReflection(selectedReflection.id, formData);
+    const result = await updateReflection(teamSlug, selectedReflection.id, formData);
 
     if (result.error) {
       setError(result.error);
@@ -224,8 +221,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
       return;
     }
 
-    // 最新の振り返りを取得して状態を更新
-    const { data: updatedReflections } = await getReflectionsByActivityId(selectedActivityId);
+    const { data: updatedReflections } = await getReflectionsByActivityId(teamSlug, selectedActivityId);
     if (updatedReflections) {
       setReflections(prev => ({ ...prev, [selectedActivityId]: updatedReflections }));
     }
@@ -242,7 +238,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
     if (!confirm('この振り返りを削除しますか？')) return;
 
     setLoading(true);
-    const result = await deleteReflection(reflectionId);
+    const result = await deleteReflection(teamSlug, reflectionId);
 
     if (result.error) {
       setError(result.error);
@@ -250,8 +246,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
       return;
     }
 
-    // 最新の振り返りを取得して状態を更新
-    const { data: updatedReflections } = await getReflectionsByActivityId(activityId);
+    const { data: updatedReflections } = await getReflectionsByActivityId(teamSlug, activityId);
     if (updatedReflections) {
       setReflections(prev => ({ ...prev, [activityId]: updatedReflections }));
     }

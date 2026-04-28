@@ -1,8 +1,12 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
-export default function AdminPage() {
+export default async function AdminPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-text-primary mb-6 mt-4">
@@ -10,7 +14,7 @@ export default function AdminPage() {
       </h1>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <Link href="/admin/users">
+        <Link href={`/t/${slug}/admin/users`}>
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <h2 className="text-xl font-bold text-text-primary mb-2">
               ユーザー管理
@@ -20,7 +24,7 @@ export default function AdminPage() {
             </p>
           </Card>
         </Link>
-        <Link href="/admin/trainers">
+        <Link href={`/t/${slug}/admin/trainers`}>
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <h2 className="text-xl font-bold text-text-primary mb-2">
               トレーナー管理
@@ -34,4 +38,3 @@ export default function AdminPage() {
     </div>
   );
 }
-

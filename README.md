@@ -65,23 +65,58 @@ SEED_TRAINEE_PASSWORD=
 
 ブラウザで [http://localhost:3000](http://localhost:3000) を開いてください。
 
+## 初期 SuperAdmin の作成
+
+SuperAdmin はテナント（チーム）を発行できる運営側の特権ロールです。**初期 SuperAdmin だけは、Supabase に直接 SQL を流して立てる必要があります**。
+
+> ⚠️ **取り扱い注意**: SuperAdmin は全テナントのデータを横断して見られる強力な権限です。付与するユーザーは厳選してください。
+
+### 手順
+
+1. 通常のユーザー登録経路は「招待」のみのため、まず SuperAdmin にしたいユーザーを Supabase Auth に作っておく
+   - 例: `npm run seed` で作成した `admin@example.com`、または手動で `auth.users` に作成
+2. **Supabase Dashboard → SQL Editor** で以下を実行（メールアドレスを差し替え）:
+
+   ```sql
+   UPDATE users
+      SET is_super_admin = true
+    WHERE email = 'ops@example.com';
+   ```
+
+3. そのユーザーで [http://localhost:3000/login](http://localhost:3000/login) からログインすると、`/super-admin` にリダイレクトされる
+4. `/super-admin/teams/new` から最初のテナントを発行できる
+
+### 動作確認用 SQL
+
+```sql
+-- 全 SuperAdmin を一覧
+SELECT id, email FROM users WHERE is_super_admin = true;
+
+-- SuperAdmin を解除
+UPDATE users SET is_super_admin = false WHERE email = 'ops@example.com';
+```
+
 ## プロジェクト構造
 
 ```
 hisoka/
 ├── app/                    # Next.js App Router
-│   ├── (auth)/            # 認証関連ページ
-│   ├── (main)/            # トレーニー用ページ
-│   ├── (trainer)/         # トレーナー用ページ
-│   ├── (admin)/            # 管理者用ページ
-│   └── layout.tsx         # ルートレイアウト
+│   ├── (auth)/login        # 共通ログイン画面
+│   ├── (super)/super-admin # 運営用 SuperAdmin ダッシュボード
+│   ├── t/[slug]/           # チームスコープ業務画面（dashboard/goals/admin/trainer）
+│   ├── teams/              # 所属チーム選択ハブ
+│   ├── no-team/            # チーム未所属ユーザー向け案内
+│   ├── invitations/[token] # 招待受諾画面
+│   ├── auth/               # 認証 callback / set-password / signout
+│   └── layout.tsx          # ルートレイアウト
 ├── components/            # Reactコンポーネント
 │   ├── ui/                # 基本UIコンポーネント
 │   ├── features/          # 機能別コンポーネント
 │   └── layout/            # レイアウトコンポーネント
 ├── lib/                   # ユーティリティ
-│   ├── supabase/          # Supabase設定
-│   ├── actions/           # Server Actions
+│   ├── supabase/          # Supabase 設定（server / client / admin）
+│   ├── context/           # currentTeam 解決ユーティリティ
+│   ├── actions/           # Server Actions（teamSlug を第1引数で受ける）
 │   └── utils/             # ヘルパー関数
 ├── types/                 # TypeScript型定義
 └── public/                # 静的ファイル

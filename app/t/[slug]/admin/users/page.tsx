@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { CreateUserForm } from '@/components/features/admin/create-user-form';
 import { UserActions } from '@/components/features/admin/user-actions';
-import { createClient } from '@/lib/supabase/client';
+import { listTeamUsers } from '@/lib/actions/admin';
+import { useCurrentTeam } from '@/lib/context/current-team-client';
 import { formatDateTime } from '@/lib/utils/helpers';
 
 type Role = 'admin' | 'trainer' | 'trainee';
@@ -25,6 +26,7 @@ interface User {
 const ITEMS_PER_PAGE = 10;
 
 export default function UsersPage() {
+  const { slug } = useCurrentTeam();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Role>('trainee');
@@ -35,65 +37,28 @@ export default function UsersPage() {
 
   useEffect(() => {
     loadUsers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   const loadUsers = async () => {
     setLoading(true);
-    const supabase = createClient();
-
-    // ロールIDを取得
-    const { data: roles } = await supabase
-      .from('roles')
-      .select('id, name')
-      .in('name', ['admin', 'trainer', 'trainee']);
-
-    if (!roles) {
-      setLoading(false);
-      return;
-    }
-
-    const rolesArray = roles as Array<{ id: string; name: string }>;
-    const roleMap = rolesArray.reduce((acc, role) => {
-      acc[role.id] = role.name as Role;
-      return acc;
-    }, {} as Record<string, Role>);
-
-    // 全ユーザーを取得
-    const { data: usersData } = await supabase
-      .from('users')
-      .select('id, name, email, created_at, role_id')
-      .order('created_at', { ascending: false });
-
-    if (usersData) {
-      const usersArray = usersData as Array<{ id: string; name: string; email: string; created_at: string; role_id: string }>;
-      const usersWithRoles: User[] = usersArray.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        created_at: user.created_at,
-        role: roleMap[user.role_id] || 'trainee',
-      }));
-      setUsers(usersWithRoles);
-    }
-
+    const { data } = await listTeamUsers(slug);
+    setUsers(data as User[]);
     setLoading(false);
   };
 
-  // フィルタリングとソート
   const filteredAndSortedUsers = useMemo(() => {
-    let filtered = users.filter(user => user.role === activeTab);
+    let filtered = users.filter((user) => user.role === activeTab);
 
-    // 検索フィルタ
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        user =>
+        (user) =>
           user.name.toLowerCase().includes(query) ||
           user.email.toLowerCase().includes(query)
       );
     }
 
-    // ソート
     filtered.sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
@@ -123,7 +88,6 @@ export default function UsersPage() {
     return filtered;
   }, [users, activeTab, searchQuery, sortField, sortDirection]);
 
-  // ページネーション
   const totalPages = Math.ceil(filteredAndSortedUsers.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -162,13 +126,10 @@ export default function UsersPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6 mt-4">
-        <h1 className="text-2xl font-bold text-text-primary">
-          ユーザー管理
-        </h1>
+        <h1 className="text-2xl font-bold text-text-primary">ユーザー管理</h1>
         <CreateUserForm />
       </div>
 
-      {/* タブ */}
       <div className="mb-6 border-b border-border">
         <div className="flex gap-4">
           {(['trainee', 'trainer', 'admin'] as Role[]).map((role) => (
@@ -181,13 +142,12 @@ export default function UsersPage() {
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
-              {roleLabels[role]} ({users.filter(u => u.role === role).length})
+              {roleLabels[role]} ({users.filter((u) => u.role === role).length})
             </button>
           ))}
         </div>
       </div>
 
-      {/* 検索 */}
       <div className="mb-4">
         <Input
           type="text"
@@ -201,29 +161,13 @@ export default function UsersPage() {
         />
       </div>
 
-      {/* テーブル */}
       <Card>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead
-                sortable
-                onClick={() => handleSort('name')}
-              >
-                名前
-              </TableHead>
-              <TableHead
-                sortable
-                onClick={() => handleSort('email')}
-              >
-                メールアドレス
-              </TableHead>
-              <TableHead
-                sortable
-                onClick={() => handleSort('created_at')}
-              >
-                登録日
-              </TableHead>
+              <TableHead sortable onClick={() => handleSort('name')}>名前</TableHead>
+              <TableHead sortable onClick={() => handleSort('email')}>メールアドレス</TableHead>
+              <TableHead sortable onClick={() => handleSort('created_at')}>登録日</TableHead>
               <TableHead className="w-48">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -250,12 +194,11 @@ export default function UsersPage() {
         </Table>
       </Card>
 
-      {/* ページネーション */}
       {totalPages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-2">
           <Button
             variant="secondary"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
           >
             前へ
@@ -265,7 +208,7 @@ export default function UsersPage() {
           </span>
           <Button
             variant="secondary"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
           >
             次へ
@@ -273,7 +216,6 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* 件数表示 */}
       <div className="mt-4 text-sm text-text-secondary">
         表示中: {startIndex + 1} - {Math.min(endIndex, filteredAndSortedUsers.length)} / {filteredAndSortedUsers.length}件
       </div>

@@ -1,38 +1,29 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { createClient } from '@/lib/supabase/server';
 import { formatDateTime } from '@/lib/utils/helpers';
+import { listTeamUsers } from '@/lib/actions/admin';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { resolveTeamFromSlug } from '@/lib/context/current-team';
 
-export default async function TrainersPage() {
-  const supabase = await createClient();
-  
-  // ロールIDを取得
-  const { data: trainerRole } = await supabase
-    .from('roles')
-    .select('id')
-    .eq('name', 'trainer')
-    .single();
+export default async function TrainersPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const team = await resolveTeamFromSlug(slug);
+  const { data: members } = await listTeamUsers(slug);
+  const trainers = members.filter((m) => m.role === 'trainer');
 
-  // トレーナー一覧を取得
-  const trainerRoleId = trainerRole ? (trainerRole as { id: string }).id : '';
-  const { data: trainers } = await supabase
-    .from('users')
-    .select('id, name, email, created_at')
-    .eq('role_id', trainerRoleId)
-    .order('created_at', { ascending: false });
-
-  // 各トレーナーの担当トレーニー数を取得
+  const admin = getAdminClient();
   const trainersWithCounts = await Promise.all(
-    ((trainers as Array<{ id: string; name: string; email: string; created_at: string }> | null) || []).map(async (trainer) => {
-      const { count } = await supabase
+    trainers.map(async (trainer) => {
+      const { count } = await admin
         .from('trainer_trainees')
         .select('*', { count: 'exact', head: true })
-        .eq('trainer_id', trainer.id);
-      
-      return {
-        ...trainer,
-        traineeCount: count || 0,
-      };
+        .eq('trainer_id', trainer.id)
+        .eq('team_id', team.teamId);
+      return { ...trainer, traineeCount: count || 0 };
     })
   );
 
@@ -45,7 +36,7 @@ export default async function TrainersPage() {
       {trainersWithCounts.length > 0 ? (
         <div className="grid md:grid-cols-2 gap-4">
           {trainersWithCounts.map((trainer) => (
-            <Link key={trainer.id} href={`/admin/trainers/${trainer.id}`}>
+            <Link key={trainer.id} href={`/t/${slug}/admin/trainers/${trainer.id}`}>
               <Card className="hover:shadow-md transition-shadow">
                 <h3 className="text-lg font-medium text-text-primary mb-2">
                   {trainer.name}
@@ -71,4 +62,3 @@ export default async function TrainersPage() {
     </div>
   );
 }
-

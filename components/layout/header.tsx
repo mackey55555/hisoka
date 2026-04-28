@@ -1,15 +1,15 @@
-'use client';
-
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Button } from '../ui/button';
+import { createClient } from '@/lib/supabase/server';
+import { listMyTeams, getIsSuperAdmin } from '@/lib/context/current-team';
+import { HeaderTeamSwitcher } from './header-team-switcher';
 
-export const Header = () => {
-  const pathname = usePathname();
+export async function Header() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const isAuthPage = pathname?.includes('/login') || pathname?.startsWith('/auth/') || pathname === '/';
-
-  if (isAuthPage) {
+  // 未ログイン: シンプルなヘッダーのみ
+  if (!user) {
     return (
       <header className="border-b border-border bg-surface">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -24,26 +24,31 @@ export const Header = () => {
     );
   }
 
+  const [teams, isSuperAdmin] = await Promise.all([
+    listMyTeams(),
+    getIsSuperAdmin(),
+  ]);
+
   return (
     <>
       {/* モバイル用ヘッダー（全幅） */}
       <header className="lg:hidden border-b border-border bg-surface fixed top-0 left-0 right-0 z-30 h-16">
         <div className="h-full flex items-center gap-3 px-4">
-          {/* ハンバーガーメニューボタン用のスペース（Sidebarコンポーネントで表示） */}
+          {/* ハンバーガーメニュー用のスペース */}
           <div className="w-10" />
-          <Link href="/dashboard" className="text-xl font-bold text-primary flex-1">
+          <Link href="/" className="text-xl font-bold text-primary flex-1">
             Hisoka
           </Link>
+          <HeaderTeamSwitcher teams={teams} isSuperAdmin={isSuperAdmin} compact />
         </div>
       </header>
-      
-      {/* デスクトップ用ヘッダー（サイドバーの右側のみ） */}
+
+      {/* デスクトップ用ヘッダー */}
       <header className="hidden lg:block border-b border-border bg-surface fixed top-0 right-0 lg:left-64 z-30 h-16">
-        <div className="h-full flex items-center justify-end px-4">
-          {/* ログアウトボタンはサイドメニューに移動したため、ここには何も表示しない */}
+        <div className="h-full flex items-center justify-end gap-3 px-4">
+          <HeaderTeamSwitcher teams={teams} isSuperAdmin={isSuperAdmin} />
         </div>
       </header>
     </>
   );
-};
-
+}

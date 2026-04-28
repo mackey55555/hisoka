@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
-import { inviteUser, getTrainersForSelect } from '@/lib/actions/admin';
+import { getTrainersForSelect } from '@/lib/actions/admin';
+import { inviteTeamMember } from '@/lib/actions/invitations';
+import { useCurrentTeam } from '@/lib/context/current-team-client';
 
 type Trainer = { id: string; name: string; email: string };
 
 export function CreateUserForm() {
+  const { slug } = useCurrentTeam();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,11 +21,11 @@ export function CreateUserForm() {
 
   useEffect(() => {
     if (isOpen && trainers.length === 0) {
-      getTrainersForSelect().then((res) => {
+      getTrainersForSelect(slug).then((res) => {
         if (res.data) setTrainers(res.data as Trainer[]);
       });
     }
-  }, [isOpen, trainers.length]);
+  }, [isOpen, trainers.length, slug]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,7 +34,11 @@ export function CreateUserForm() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const result = await inviteUser(formData);
+    const result = await inviteTeamMember(slug, {
+      email: formData.get('email') as string,
+      role: formData.get('role') as string,
+      trainerId: (formData.get('trainerId') as string) || null,
+    });
 
     if (result.error) {
       setError(result.error);
@@ -40,13 +47,11 @@ export function CreateUserForm() {
     }
 
     if (result.warning) {
-      setInfo(result.warning);
+      setInfo(
+        (result.warning ?? '') +
+          (result.invitationUrl ? `\n招待URL: ${result.invitationUrl}` : '')
+      );
       setLoading(false);
-      setTimeout(() => {
-        setIsOpen(false);
-        setInfo('');
-        window.location.reload();
-      }, 2500);
       return;
     }
 
@@ -71,15 +76,8 @@ export function CreateUserForm() {
       <Modal isOpen={isOpen} onClose={closeModal} title="ユーザーを招待">
         <form onSubmit={handleSubmit} className="space-y-4">
           <p className="text-sm text-text-secondary">
-            入力したメールアドレスに招待メールを送信します。招待された方はメール内のリンクからパスワードを設定してログインできます。
+            入力したメールアドレスに招待メールを送信します。
           </p>
-          <Input
-            type="text"
-            label="お名前"
-            name="name"
-            required
-            disabled={loading}
-          />
           <Input
             type="email"
             label="メールアドレス"
@@ -100,15 +98,17 @@ export function CreateUserForm() {
               className="w-full px-4 py-3 bg-background border border-border rounded-lg"
             >
               <option value="">選択してください</option>
-              <option value="admin">管理者</option>
               <option value="trainer">トレーナー</option>
               <option value="trainee">トレーニー</option>
             </select>
+            <p className="mt-1 text-xs text-text-secondary">
+              管理者の追加は SuperAdmin が行います
+            </p>
           </div>
           {role === 'trainee' && (
             <div>
               <label className="block text-sm font-medium text-text-primary mb-2">
-                担当トレーナー（任意）
+                担当トレーナー（任意・受諾後に管理画面で再設定可能）
               </label>
               <select
                 name="trainerId"
@@ -124,8 +124,8 @@ export function CreateUserForm() {
               </select>
             </div>
           )}
-          {error && <div className="text-error text-sm">{error}</div>}
-          {info && <div className="text-warning text-sm">{info}</div>}
+          {error && <div className="text-error text-sm whitespace-pre-wrap">{error}</div>}
+          {info && <div className="text-warning text-sm whitespace-pre-wrap">{info}</div>}
           <div className="flex gap-4">
             <Button type="submit" variant="primary" disabled={loading}>
               {loading ? '送信中...' : '招待を送信'}
@@ -136,7 +136,7 @@ export function CreateUserForm() {
               onClick={closeModal}
               disabled={loading}
             >
-              キャンセル
+              閉じる
             </Button>
           </div>
         </form>

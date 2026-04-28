@@ -6,7 +6,12 @@ import { createClient } from '@/lib/supabase/server';
 import { ProgressCharts } from '@/components/features/dashboard/progress-charts';
 import { GoalsListSection } from '@/components/features/dashboard/goals-list-section';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -22,7 +27,7 @@ export default async function DashboardPage() {
 
   const userDataTyped = userData as { name: string } | null;
 
-  const { data: goals } = await getGoals();
+  const { data: goals } = await getGoals(slug);
 
   const goalsArray = (goals as Array<{ id: string; content: string; deadline: string; status: string; created_at: string }> | null) || [];
   const inProgressGoals = goalsArray.filter((g) => g.status === 'in_progress');
@@ -85,7 +90,7 @@ export default async function DashboardPage() {
       <GoalsListSection goals={goalsArray} />
 
       <div className="text-center">
-        <Link href="/goals/new">
+        <Link href={`/t/${slug}/goals/new`}>
           <Button variant="primary" className="px-8">
             + 新規目標
           </Button>

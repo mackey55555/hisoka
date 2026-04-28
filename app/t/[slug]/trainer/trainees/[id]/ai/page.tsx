@@ -9,12 +9,12 @@ import { Card } from '@/components/ui/card';
 import type { AiDiagnosis } from '@/types';
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; id: string }>;
   searchParams: Promise<{ year?: string; month?: string }>;
 }
 
 export default async function TrainerAiDetailPage({ params, searchParams }: PageProps) {
-  const { id: traineeId } = await params;
+  const { slug, id: traineeId } = await params;
   const sp = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -34,14 +34,13 @@ export default async function TrainerAiDetailPage({ params, searchParams }: Page
   const year = sp.year ? parseInt(sp.year) : now.getFullYear();
   const month = sp.month ? parseInt(sp.month) : now.getMonth() + 1;
 
-  const { data: diagnosis } = await getTraineeDiagnosis(traineeId, year, month);
+  const { data: diagnosis } = await getTraineeDiagnosis(slug, traineeId, year, month);
 
-  // 推移データを取得（直近6ヶ月分）
   const historyPromises = Array.from({ length: 6 }, (_, i) => {
     let m = month - i;
     let y = year;
     while (m <= 0) { m += 12; y -= 1; }
-    return getTraineeDiagnosis(traineeId, y, m);
+    return getTraineeDiagnosis(slug, traineeId, y, m);
   });
   const historyResults = await Promise.all(historyPromises);
   const history = historyResults
@@ -49,10 +48,9 @@ export default async function TrainerAiDetailPage({ params, searchParams }: Page
     .filter((d): d is AiDiagnosis => d !== null)
     .reverse();
 
-  // 質問サジェスト取得
   let questions: any[] = [];
   if (diagnosis) {
-    const { data } = await getQuestionSuggests(diagnosis.id);
+    const { data } = await getQuestionSuggests(slug, diagnosis.id);
     questions = data || [];
   }
 
@@ -65,7 +63,7 @@ export default async function TrainerAiDetailPage({ params, searchParams }: Page
       <MonthNavigator
         year={year}
         month={month}
-        basePath={`/trainer/trainees/${traineeId}/ai`}
+        basePath={`/t/${slug}/trainer/trainees/${traineeId}/ai`}
       />
 
       {diagnosis ? (
