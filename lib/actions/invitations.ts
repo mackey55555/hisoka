@@ -10,7 +10,13 @@ import {
   setLastTeamSlug,
   type TeamRole,
 } from '@/lib/context/current-team';
-import { sendInvitationEmail } from '@/lib/mail';
+import { sendInvitationEmail, formatDate } from '@/lib/mail';
+
+const ROLE_LABELS = {
+  admin: '管理者',
+  trainer: 'トレーナー',
+  trainee: 'トレーニー',
+} as const;
 
 const inviteSchema = z.object({
   email: z.string().email('有効なメールアドレスを入力してください'),
@@ -131,9 +137,23 @@ export async function inviteTeamMember(
 
   if (!userExists) {
     // 未登録ユーザー: Supabase の標準招待メール（auth.users 作成 + magic link 送信）
+    const { data: teamInfoNew } = await admin
+      .from('teams' as any)
+      .select('name')
+      .eq('id', team.teamId)
+      .single();
+    const teamNameNew =
+      ((teamInfoNew as any)?.name as string | undefined) ?? 'チーム';
     const { error: emailErr } = await admin.auth.admin.inviteUserByEmail(
       normalizedEmail,
       {
+        data: {
+          team_name: teamNameNew,
+          role,
+          role_label: ROLE_LABELS[role],
+          invitation_token: token,
+          expires_at: formatDate(expiresAt),
+        },
         redirectTo: `${siteUrl}/auth/callback?next=/invitations/${token}`,
       }
     );

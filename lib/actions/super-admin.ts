@@ -5,7 +5,13 @@ import { randomBytes } from 'crypto';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { getAdminClient } from '@/lib/supabase/admin';
-import { sendInvitationEmail } from '@/lib/mail';
+import { sendInvitationEmail, formatDate } from '@/lib/mail';
+
+const ROLE_LABELS = {
+  admin: '管理者',
+  trainer: 'トレーナー',
+  trainee: 'トレーニー',
+} as const;
 
 async function requireSuperAdmin(): Promise<{ userId: string }> {
   const supabase = await createClient();
@@ -109,7 +115,17 @@ export async function provisionTeam(input: ProvisionInput): Promise<ProvisionRes
   if (!userExists) {
     const { error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
       normalizedEmail,
-      { data: { name: adminName }, redirectTo }
+      {
+        data: {
+          name: adminName,
+          team_name: name,
+          role: 'admin',
+          role_label: ROLE_LABELS.admin,
+          invitation_token: token,
+          expires_at: formatDate(expiresAt),
+        },
+        redirectTo,
+      }
     );
     if (inviteErr) {
       // 新規招待が失敗 → ロールバック
@@ -321,7 +337,17 @@ export async function inviteAdditionalAdmin(
 
   const { error: emailErr } = await admin.auth.admin.inviteUserByEmail(
     normalizedEmail,
-    { data: { name }, redirectTo }
+    {
+      data: {
+        name,
+        team_name: (teamRow as any)?.name ?? 'チーム',
+        role: 'admin',
+        role_label: ROLE_LABELS.admin,
+        invitation_token: token,
+        expires_at: formatDate(new Date(expiresAt).toISOString()),
+      },
+      redirectTo,
+    }
   );
 
   // 既存ユーザーで invite が失敗するケースは Resend 経由のカスタム送信にフォールバック
