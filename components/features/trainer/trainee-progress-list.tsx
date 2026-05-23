@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import {
+  daysUntilDeadline,
   formatDate,
   formatDateTime,
   formatMonthKey,
@@ -34,15 +35,8 @@ const STATUS_MARKER: Record<GoalStatus, string> = {
   cancelled: 'bg-text-secondary/40',
 };
 
-function daysFromNow(deadline: string): number {
-  const d = new Date(deadline);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.ceil((d.getTime() - today.getTime()) / 86400000);
-}
-
 function deadlineHint(deadline: string): string {
-  const days = daysFromNow(deadline);
+  const days = daysUntilDeadline(deadline);
   if (days > 0) return `残り${days}日`;
   if (days === 0) return '今日まで';
   return `${-days}日経過`;
