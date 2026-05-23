@@ -10,6 +10,16 @@ export function formatDateTime(date: string | Date): string {
   return format(dateObj, 'yyyy年MM月dd日 HH:mm');
 }
 
+export function formatMonthKey(date: string | Date): string {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  return format(dateObj, 'yyyy-MM');
+}
+
+export function formatMonthLabel(date: string | Date): string {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  return format(dateObj, 'yyyy年M月');
+}
+
 export function isDeadlineNear(deadline: string): boolean {
   const deadlineDate = parseISO(deadline);
   const today = new Date();

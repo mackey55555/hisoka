@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getGoalById } from '@/lib/actions/goals';
 import { getActivitiesByGoalId } from '@/lib/actions/activities';
 import { getReflectionsByActivityIds } from '@/lib/actions/reflections';
+import { getMyDiagnosis } from '@/lib/actions/ai';
 import { GoalDetail } from '@/components/features/goals/goal-detail';
 import type { Activity, Reflection } from '@/types';
 
@@ -12,9 +13,11 @@ export default async function GoalDetailPage({
 }) {
   const { slug, id } = await params;
 
-  const [goalResult, activitiesResult] = await Promise.all([
+  const now = new Date();
+  const [goalResult, activitiesResult, diagnosisResult] = await Promise.all([
     getGoalById(slug, id),
     getActivitiesByGoalId(slug, id),
+    getMyDiagnosis(slug, now.getFullYear(), now.getMonth() + 1),
   ]);
 
   const { data: goal, error } = goalResult;
@@ -24,7 +27,7 @@ export default async function GoalDetailPage({
   }
 
   const activities: Activity[] = (activitiesResult.data || []) as Activity[];
-  
+
   // 活動記録が存在する場合、全ての振り返りを一度に取得
   const activityIds = activities.map(a => a.id);
   const reflectionsResult = activityIds.length > 0
@@ -47,6 +50,7 @@ export default async function GoalDetailPage({
       goal={goal}
       activities={activities}
       initialReflections={reflectionsMap}
+      diagnosis={diagnosisResult.data ?? null}
     />
   );
 }
