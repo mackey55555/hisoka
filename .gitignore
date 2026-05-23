@@ -44,3 +44,6 @@ next-env.d.ts
 **/public/worker-*.js.map
 
 .claude
+
+# documentation (kept local only)
+/docs/
