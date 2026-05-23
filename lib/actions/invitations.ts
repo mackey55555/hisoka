@@ -10,6 +10,7 @@ import {
   setLastTeamSlug,
   type TeamRole,
 } from '@/lib/context/current-team';
+import { sendInvitationEmail } from '@/lib/mail';
 
 const inviteSchema = z.object({
   email: z.string().email('有効なメールアドレスを入力してください'),
@@ -129,7 +130,7 @@ export async function inviteTeamMember(
   let warning: string | undefined;
 
   if (!userExists) {
-    // 未登録ユーザー: 標準の招待メール
+    // 未登録ユーザー: Supabase の標準招待メール（auth.users 作成 + magic link 送信）
     const { error: emailErr } = await admin.auth.admin.inviteUserByEmail(
       normalizedEmail,
       {
@@ -142,21 +143,43 @@ export async function inviteTeamMember(
       emailSent = true;
     }
   } else {
-    // 既存ユーザー: generateLink で magiclink を発行（自動送信される設定なら送られる）
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: normalizedEmail,
-      options: {
-        redirectTo: `${siteUrl}/auth/callback?next=/invitations/${token}`,
-      },
+    // 既存ユーザー: Resend 経由でカスタム招待メールを送信
+    // (BUG-001 / BUG-003 対応: docs/team-plan-bugs.md / docs/mail-setup.md)
+    const { data: teamInfo } = await admin
+      .from('teams' as any)
+      .select('name')
+      .eq('id', team.teamId)
+      .single();
+    const teamName = ((teamInfo as any)?.name as string | undefined) ?? 'チーム';
+
+    let inviterName: string | undefined;
+    if (caller?.id) {
+      const { data: callerRow } = await admin
+        .from('users')
+        .select('name')
+        .eq('id', caller.id)
+        .maybeSingle();
+      inviterName = ((callerRow as any)?.name as string | undefined) ?? undefined;
+    }
+
+    const mailResult = await sendInvitationEmail({
+      to: normalizedEmail,
+      teamName,
+      acceptUrl,
+      expiresAt,
+      role,
+      inviterName,
     });
-    if (linkErr) {
-      warning = '招待リンク発行に失敗しました（URLを直接共有してください）: ' + linkErr.message;
+
+    if (!mailResult.sent) {
+      emailSent = false;
+      warning =
+        '招待メール送信に失敗しました（招待URLを直接共有してください）: ' +
+        (mailResult.error ?? 'unknown');
     } else {
-      // generateLink の挙動は Supabase 設定依存（Email enable で送信される）
-      emailSent = Boolean(linkData);
-      if (!emailSent) {
-        warning = '既存ユーザー宛のため、招待URLを手動で共有してください';
+      emailSent = true;
+      if (mailResult.redirectedTo) {
+        warning = `[DEV] 開発環境のため、メールは ${mailResult.redirectedTo} にリダイレクト送信されました`;
       }
     }
   }
@@ -283,6 +306,69 @@ export async function acceptInvitation(token: string): Promise<{
   // ↑ 1 は「今 INSERT した自分のレコード」のみ = 他に所属がない = 初めての所属
 
   return { success: true, teamSlug, needsPasswordSetup };
+}
+
+/**
+ * チームの未受諾 (pending) 招待一覧を返す（チーム admin / SuperAdmin 専用）。
+ *
+ * 既存 auth.users のメールアドレスについては `isExistingAuthUser=true` を返す。
+ * チーム管理者は、これを見て「メール未送信の可能性が高い既存ユーザー」を識別し、
+ * `acceptUrl` を手動で共有できる。
+ * （BUG-001 / BUG-003 の暫定対応: docs/team-plan-bugs.md 参照）
+ */
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: TeamRole;
+  invitedAt: string;
+  expiresAt: string;
+  acceptUrl: string;
+  isExistingAuthUser: boolean;
+}
+
+export async function listTeamInvitations(teamSlug: string): Promise<{
+  data: PendingInvitation[];
+  error?: string;
+}> {
+  const team = await resolveTeamFromSlug(teamSlug);
+  if (team.role !== 'admin' && !team.isSuperAdmin) {
+    return { data: [], error: 'チーム admin 権限が必要です' };
+  }
+
+  const admin = getAdminClient();
+  const { data: invs, error } = await admin
+    .from('team_invitations' as any)
+    .select('id, email, role, expires_at, created_at, token')
+    .eq('team_id', team.teamId)
+    .is('accepted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (error || !invs) {
+    return { data: [], error: error?.message ?? 'unknown' };
+  }
+
+  // 既存 auth.users との一致を1回の listUsers で判定
+  const { data: usersList } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+  const existingEmails = new Set(
+    (usersList?.users ?? []).map((u) => (u.email ?? '').toLowerCase())
+  );
+
+  const siteUrl = resolveSiteUrl();
+
+  const data: PendingInvitation[] = (invs as any[]).map((inv) => ({
+    id: inv.id,
+    email: inv.email,
+    role: inv.role as TeamRole,
+    invitedAt: inv.created_at,
+    expiresAt: inv.expires_at,
+    acceptUrl: `${siteUrl}/invitations/${inv.token}`,
+    isExistingAuthUser: existingEmails.has((inv.email ?? '').toLowerCase()),
+  }));
+
+  return { data };
 }
 
 /**

@@ -5,6 +5,7 @@ import { randomBytes } from 'crypto';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { getAdminClient } from '@/lib/supabase/admin';
+import { sendInvitationEmail } from '@/lib/mail';
 
 async function requireSuperAdmin(): Promise<{ userId: string }> {
   const supabase = await createClient();
@@ -121,18 +122,26 @@ export async function provisionTeam(input: ProvisionInput): Promise<ProvisionRes
     }
     emailSent = true;
   } else {
-    // 既存 auth ユーザー: magiclink で送信
-    const { error: linkErr } = await admin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: normalizedEmail,
-      options: { redirectTo },
+    // 既存 auth ユーザー: Resend 経由でカスタム招待メール
+    // (BUG-001 / BUG-003 対応: docs/team-plan-bugs.md / docs/mail-setup.md)
+    const mailResult = await sendInvitationEmail({
+      to: normalizedEmail,
+      teamName: name,
+      acceptUrl,
+      expiresAt,
+      role: 'admin',
+      inviterName: undefined,
     });
-    if (linkErr) {
+    if (!mailResult.sent) {
       warning =
         '既存ユーザー宛の招待メール送信に失敗しました（招待URLを直接共有してください）: ' +
-        linkErr.message;
+        (mailResult.error ?? 'unknown');
+      emailSent = false;
     } else {
       emailSent = true;
+      if (mailResult.redirectedTo) {
+        warning = `[DEV] 開発環境のため、メールは ${mailResult.redirectedTo} にリダイレクト送信されました`;
+      }
     }
   }
 
@@ -315,19 +324,19 @@ export async function inviteAdditionalAdmin(
     { data: { name }, redirectTo }
   );
 
-  // 既存ユーザーで invite が失敗するケースは magiclink にフォールバック
+  // 既存ユーザーで invite が失敗するケースは Resend 経由のカスタム送信にフォールバック
+  // (BUG-001 / BUG-003 対応: docs/team-plan-bugs.md)
   if (emailErr) {
-    const { error: linkErr } = await admin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: normalizedEmail,
-      options: { redirectTo },
+    const expiresAtIso = new Date(expiresAt).toISOString();
+    await sendInvitationEmail({
+      to: normalizedEmail,
+      teamName: (teamRow as any)?.name ?? 'チーム',
+      acceptUrl,
+      expiresAt: expiresAtIso,
+      role: 'admin',
+      inviterName: undefined,
     });
-    if (linkErr) {
-      return {
-        success: true,
-        invitationUrl: acceptUrl,
-      };
-    }
+    // フォールバック送信が失敗しても invitationUrl は返す（手動共有可能）
   }
 
   revalidatePath(`/super-admin/teams/${teamId}`);

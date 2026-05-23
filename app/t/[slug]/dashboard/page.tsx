@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getGoals } from '@/lib/actions/goals';
 import { createClient } from '@/lib/supabase/server';
+import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { ProgressCharts } from '@/components/features/dashboard/progress-charts';
 import { GoalsListSection } from '@/components/features/dashboard/goals-list-section';
 
@@ -12,6 +14,16 @@ export default async function DashboardPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  // 役割別 redirect (BUG-004 対応: docs/team-plan-bugs.md)
+  // このページは「自分の目標を持つ人」のダッシュボード。
+  // trainee はもちろん、trainer も自分の目標管理に使う (BUG-005)。
+  // admin は管理専任ロール扱いなので専用画面へ飛ばす。
+  const team = await resolveTeamFromSlug(slug);
+  if (team.role === 'admin') {
+    redirect(`/t/${slug}/admin`);
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

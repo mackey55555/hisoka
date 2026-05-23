@@ -46,7 +46,7 @@ export default async function TeamScopedLayout({ children, params }: Props) {
         isSuperAdmin: team.isSuperAdmin,
       }}
     >
-      <Header />
+      <Header withSidebar />
       <div className="flex min-h-screen">
         <Sidebar role={sidebarRole} teamSlug={team.slug} />
         <main className="flex-1 lg:ml-64 min-h-screen pt-16 lg:pt-16">

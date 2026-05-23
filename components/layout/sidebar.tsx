@@ -70,18 +70,31 @@ export function Sidebar({ role, teamSlug }: SidebarProps) {
     </svg>
   );
 
-  const traineeMenuItems = [
+  // メニュー1行は通常のリンク or 区切り線
+  type IconComponent = ({ isActive }: { isActive: boolean }) => React.ReactNode;
+  type MenuRow =
+    | { href: string; label: string; icon: IconComponent }
+    | { divider: true };
+
+  const traineeMenuItems: MenuRow[] = [
     { href: `${base}/dashboard`, label: 'ダッシュボード', icon: DashboardIcon },
     { href: `${base}/dashboard/ai`, label: 'AI診断', icon: AiIcon },
     { href: `${base}/goals`, label: '目標一覧', icon: ListIcon },
     { href: `${base}/goals/new`, label: '新規目標', icon: PlusIcon },
   ];
 
-  const trainerMenuItems = [
-    { href: `${base}/trainer/dashboard`, label: 'ダッシュボード', icon: DashboardIcon },
+  // BUG-005 対応: trainer は trainee 機能を併用する（自分の目標管理）。
+  // 上に自分用、区切りの下に担当トレーニー機能を置く。
+  const trainerMenuItems: MenuRow[] = [
+    { href: `${base}/dashboard`, label: 'マイダッシュボード', icon: DashboardIcon },
+    { href: `${base}/dashboard/ai`, label: 'AI診断', icon: AiIcon },
+    { href: `${base}/goals`, label: '目標一覧', icon: ListIcon },
+    { href: `${base}/goals/new`, label: '新規目標', icon: PlusIcon },
+    { divider: true },
+    { href: `${base}/trainer/dashboard`, label: '担当トレーニー', icon: TrainerIcon },
   ];
 
-  const adminMenuItems = [
+  const adminMenuItems: MenuRow[] = [
     { href: `${base}/admin`, label: '管理画面', icon: HomeIcon },
     { href: `${base}/admin/users`, label: 'ユーザー管理', icon: UsersIcon },
     { href: `${base}/admin/trainers`, label: 'トレーナー管理', icon: TrainerIcon },
@@ -137,7 +150,7 @@ export function Sidebar({ role, teamSlug }: SidebarProps) {
         {/* ヘッダー部分（サイドバー上部、デスクトップのみ） */}
         <div className="hidden lg:flex h-16 border-b border-border items-center px-6 flex-shrink-0">
           <Link
-            href={role === 'admin' ? `${base}/admin` : role === 'trainer' ? `${base}/trainer/dashboard` : `${base}/dashboard`}
+            href={role === 'admin' ? `${base}/admin` : `${base}/dashboard`}
             onClick={() => setIsOpen(false)}
             className="block"
           >
@@ -148,7 +161,15 @@ export function Sidebar({ role, teamSlug }: SidebarProps) {
         {/* メニュー部分 */}
         <div className="flex flex-col flex-1 overflow-y-auto p-6 lg:pt-6 pt-20">
           <nav className="space-y-2 flex-1">
-            {menuItems.map((item) => {
+            {menuItems.map((item, idx) => {
+              if ('divider' in item) {
+                return (
+                  <hr
+                    key={`divider-${idx}`}
+                    className="my-2 border-t border-border"
+                  />
+                );
+              }
               const active = isActive(item.href);
               const IconComponent = item.icon;
               return (

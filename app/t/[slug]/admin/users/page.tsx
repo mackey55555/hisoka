@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { CreateUserForm } from '@/components/features/admin/create-user-form';
 import { UserActions } from '@/components/features/admin/user-actions';
+import { PendingInvitations } from '@/components/features/admin/pending-invitations';
 import { listTeamUsers } from '@/lib/actions/admin';
 import { useCurrentTeam } from '@/lib/context/current-team-client';
 import { formatDateTime } from '@/lib/utils/helpers';
@@ -219,6 +220,8 @@ export default function UsersPage() {
       <div className="mt-4 text-sm text-text-secondary">
         表示中: {startIndex + 1} - {Math.min(endIndex, filteredAndSortedUsers.length)} / {filteredAndSortedUsers.length}件
       </div>
+
+      <PendingInvitations />
     </div>
   );
 }

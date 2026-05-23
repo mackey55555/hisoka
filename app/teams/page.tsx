@@ -22,7 +22,7 @@ export default async function TeamsPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen px-4 py-12">
+      <main className="min-h-screen px-4 pt-24 pb-12">
         <div className="container mx-auto max-w-3xl">
           <h1 className="text-2xl font-bold text-text-primary mb-6">
             所属チームを選択
