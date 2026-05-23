@@ -65,8 +65,8 @@ export async function sendInvitationEmail(
   const isRedirected = actualTo !== params.to;
 
   const subject = isRedirected
-    ? `[DEV→${params.to}] ${params.teamName} への招待`
-    : `${params.teamName} への招待`;
+    ? `[DEV→${params.to}] 【Hisoka】${params.teamName} への招待`
+    : `【Hisoka】${params.teamName} への招待`;
 
   const resend = new Resend(apiKey);
   const { data, error } = await resend.emails.send({
