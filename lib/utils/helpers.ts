@@ -21,6 +21,10 @@ export function formatMonthKey(date: string | Date): string {
   return format(toDate(date), 'yyyy-MM');
 }
 
+export function formatYmd(date: string | Date): string {
+  return format(toDate(date), 'yyyy-MM-dd');
+}
+
 export function formatMonthLabel(date: string | Date): string {
   return format(toDate(date), 'yyyy年M月');
 }
