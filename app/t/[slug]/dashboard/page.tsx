@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { ProgressCharts } from '@/components/features/dashboard/progress-charts';
 import { GoalsListSection } from '@/components/features/dashboard/goals-list-section';
+import { TutorialBanner } from '@/components/features/tutorial/tutorial-banner';
 
 export default async function DashboardPage({
   params,
@@ -71,6 +72,8 @@ export default async function DashboardPage({
         </h1>
         <p className="text-text-secondary">今日も頑張りましょう</p>
       </div>
+
+      <TutorialBanner teamSlug={slug} />
 
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         <Card>
