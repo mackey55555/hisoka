@@ -1,7 +1,4 @@
 {
-  "env": {
-    "TZ": "Asia/Tokyo"
-  },
   "crons": [
     {
       "path": "/api/cron/monthly-analysis",
