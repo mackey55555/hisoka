@@ -21,12 +21,32 @@ export default function AuthCallbackPage() {
 
     const searchParams = new URLSearchParams(window.location.search);
     const code = searchParams.get('code');
-    const defaultNext = needsPasswordSet ? '/auth/set-password' : '/';
+    const tokenHash = searchParams.get('token_hash');
+    const queryType = searchParams.get('type');
+    const recoveryOrInvite = queryType === 'recovery' || queryType === 'invite';
+    const defaultNext =
+      needsPasswordSet || recoveryOrInvite ? '/auth/set-password' : '/';
     const next = searchParams.get('next') || defaultNext;
 
     (async () => {
       // 既存の管理者セッション等が残っていると新ユーザー処理に紛れ込むため、先に破棄する
       await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+
+      // verifyOtp Flow: ?token_hash= で検証（メールテンプレで明示的に組む形式）
+      if (tokenHash && queryType) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: queryType as
+            | 'recovery'
+            | 'invite'
+            | 'email'
+            | 'magiclink'
+            | 'signup'
+            | 'email_change',
+        });
+        window.location.href = error ? '/login' : next;
+        return;
+      }
 
       // PKCE Flow: ?code= で交換
       if (code) {
