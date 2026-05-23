@@ -75,7 +75,7 @@ export default function SetPasswordPage() {
             パスワード設定
           </h1>
           <p className="text-text-secondary text-sm mb-8 text-center">
-            招待されたアカウントのパスワードを設定してください。
+            新しいパスワードを設定してください。
           </p>
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input

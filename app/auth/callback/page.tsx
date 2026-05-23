@@ -16,11 +16,12 @@ export default function AuthCallbackPage() {
     const hashParams = new URLSearchParams(hash);
     const accessToken = hashParams.get('access_token');
     const refreshToken = hashParams.get('refresh_token');
-    const isInvite = hashParams.get('type') === 'invite';
+    const type = hashParams.get('type');
+    const needsPasswordSet = type === 'invite' || type === 'recovery';
 
     const searchParams = new URLSearchParams(window.location.search);
     const code = searchParams.get('code');
-    const defaultNext = isInvite ? '/auth/set-password' : '/';
+    const defaultNext = needsPasswordSet ? '/auth/set-password' : '/';
     const next = searchParams.get('next') || defaultNext;
 
     (async () => {
