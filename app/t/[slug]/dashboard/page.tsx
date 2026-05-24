@@ -36,11 +36,14 @@ export default async function DashboardPage({
 
   const { data: userData } = await supabase
     .from('users')
-    .select('name')
+    .select('name, tutorial_completed_at')
     .eq('id', user.id)
     .single();
 
-  const userDataTyped = userData as { name: string } | null;
+  const userDataTyped = userData as
+    | { name: string; tutorial_completed_at: string | null }
+    | null;
+  const showTutorial = !userDataTyped?.tutorial_completed_at;
 
   const { data: goals } = await getGoals(slug);
   const goalsArray =
@@ -149,7 +152,7 @@ export default async function DashboardPage({
         <p className="text-text-secondary">今日も少しずつ、書き残していきましょう</p>
       </div>
 
-      <TutorialBanner teamSlug={slug} />
+      {showTutorial && <TutorialBanner teamSlug={slug} />}
 
       <QuickActivityEntry teamSlug={slug} goals={goalsArray} />
 

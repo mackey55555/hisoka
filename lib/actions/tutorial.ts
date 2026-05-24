@@ -162,3 +162,23 @@ export async function cancelTutorial(
   revalidatePath(`/t/${team.slug}/dashboard`);
   return { success: true };
 }
+
+// チュートリアルを 1 回触れたフラグを立てる。
+// 完了でも途中スキップでも呼ばれて、以降ダッシュボードのバナーが消える。
+export async function markTutorialCompleted(
+  teamSlug: string
+): Promise<{ success?: true; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: '認証が必要です' };
+
+  const { error } = await (supabase as any)
+    .from('users')
+    .update({ tutorial_completed_at: new Date().toISOString() })
+    .eq('id', user.id);
+
+  if (error) return { error: 'フラグの保存に失敗しました' };
+
+  revalidatePath(`/t/${teamSlug}/dashboard`);
+  return { success: true };
+}

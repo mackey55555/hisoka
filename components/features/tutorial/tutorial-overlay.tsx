@@ -9,6 +9,7 @@ import {
   createTutorialActivity,
   createTutorialReflection,
   cancelTutorial,
+  markTutorialCompleted,
 } from '@/lib/actions/tutorial';
 
 type Step = 1 | 2 | 3 | 4 | 'done';
@@ -33,6 +34,14 @@ export function TutorialOverlay({ teamSlug, onClose }: Props) {
     }
     startTransition(async () => {
       await cancelTutorial(teamSlug, { goalId });
+      await markTutorialCompleted(teamSlug);
+      onClose();
+    });
+  };
+
+  const handleDone = () => {
+    startTransition(async () => {
+      await markTutorialCompleted(teamSlug);
       onClose();
     });
   };
@@ -125,7 +134,7 @@ export function TutorialOverlay({ teamSlug, onClose }: Props) {
               error={error}
             />
           )}
-          {step === 'done' && <StepDone onClose={onClose} />}
+          {step === 'done' && <StepDone onClose={handleDone} />}
         </div>
       </div>
     </div>
