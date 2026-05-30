@@ -34,6 +34,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
+      <head>
+        {/* appleWebApp の capable: true は古い `apple-mobile-web-app-capable` メタタグを出すため、
+            新しい標準である `mobile-web-app-capable` も追加して deprecation 警告を抑える */}
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body>
         <ServiceWorkerRegister />
         {children}
