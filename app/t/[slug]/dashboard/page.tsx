@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getGoals } from '@/lib/actions/goals';
 import { getMyDiagnosis } from '@/lib/actions/ai';
+import { getMyMonthlyReflection } from '@/lib/actions/monthly-reflections';
 import { createClient } from '@/lib/supabase/server';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { formatYmd } from '@/lib/utils/helpers';
@@ -11,6 +12,7 @@ import { ProgressCharts } from '@/components/features/dashboard/progress-charts'
 import { GoalsListSection } from '@/components/features/dashboard/goals-list-section';
 import { StreakCard } from '@/components/features/dashboard/streak-card';
 import { MorningCard } from '@/components/features/dashboard/morning-card';
+import { MonthlyReflectionCard } from '@/components/features/dashboard/monthly-reflection-card';
 import { QuickActivityEntry } from '@/components/features/dashboard/quick-activity-entry';
 import { TutorialBanner } from '@/components/features/tutorial/tutorial-banner';
 import type { Reflection } from '@/types';
@@ -68,6 +70,7 @@ export default async function DashboardPage({
     { data: allActivities },
     { data: pastReflections },
     diagnosisResult,
+    monthlyReflectionResult,
   ] = await Promise.all([
     goalIds.length > 0
       ? supabase
@@ -84,6 +87,7 @@ export default async function DashboardPage({
       .order('created_at', { ascending: false })
       .limit(50),
     getMyDiagnosis(slug, thisYear, thisMonth + 1),
+    getMyMonthlyReflection(slug, thisYear, thisMonth + 1),
   ]);
 
   const activities =
@@ -174,6 +178,13 @@ export default async function DashboardPage({
       </div>
 
       <StreakCard activityDates={activityDates} />
+
+      <MonthlyReflectionCard
+        teamSlug={slug}
+        year={thisYear}
+        month={thisMonth + 1}
+        initial={monthlyReflectionResult.data ?? null}
+      />
 
       <MorningCard diagnosis={diagnosisResult.data ?? null} pastReflection={pastReflection} />
 

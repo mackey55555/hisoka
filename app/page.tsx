@@ -5,11 +5,13 @@ import {
   getLastTeamSlug,
   getIsSuperAdmin,
 } from '@/lib/context/current-team';
+import { LandingPage } from '@/components/marketing/landing-page';
 
 export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  // 未ログインはランディングページを表示（ログイン済みは所属に応じてリダイレクト）
+  if (!user) return <LandingPage />;
 
   const [teams, isSuperAdmin] = await Promise.all([
     listMyTeams(),

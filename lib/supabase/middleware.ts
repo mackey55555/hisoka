@@ -62,6 +62,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // ルート（ランディングページ）は未ログインでも表示する
+  if (path === '/' && !user) {
+    return supabaseResponse;
+  }
+
   // 未認証 → /login（next 付き）
   if (!user) {
     const loginUrl = request.nextUrl.clone();

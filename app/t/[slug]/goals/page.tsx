@@ -1,8 +1,7 @@
-import Link from 'next/link';
-import { Card } from '@/components/ui/card';
 import { getGoals } from '@/lib/actions/goals';
-import { formatDate, isDeadlineNear, isDeadlinePassed } from '@/lib/utils/helpers';
+import { getMyMonthlyReflection } from '@/lib/actions/monthly-reflections';
 import { GoalsList } from '@/components/features/goals/goals-list';
+import { MonthlyReflectionCard } from '@/components/features/dashboard/monthly-reflection-card';
 
 export default async function GoalsPage({
   params,
@@ -10,9 +9,24 @@ export default async function GoalsPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { data: goals } = await getGoals(slug);
 
-  const goalsArray = (goals as Array<{ id: string; content: string; deadline: string; status: string; created_at: string }> | null) || [];
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const thisMonth = now.getMonth() + 1;
+
+  const [{ data: goals }, monthlyReflectionResult] = await Promise.all([
+    getGoals(slug),
+    getMyMonthlyReflection(slug, thisYear, thisMonth),
+  ]);
+
+  const goalsArray =
+    (goals as Array<{
+      id: string;
+      content: string;
+      deadline: string;
+      status: string;
+      created_at: string;
+    }> | null) || [];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -20,8 +34,14 @@ export default async function GoalsPage({
         <h1 className="text-2xl font-bold text-text-primary">目標一覧</h1>
       </div>
 
+      <MonthlyReflectionCard
+        teamSlug={slug}
+        year={thisYear}
+        month={thisMonth}
+        initial={monthlyReflectionResult.data ?? null}
+      />
+
       <GoalsList initialGoals={goalsArray} />
     </div>
   );
 }
-

@@ -453,17 +453,19 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
                             </p>
                           </div>
                           <div>
-                            <Button
-                              variant="ghost"
-                              className="text-sm"
-                              onClick={() => {
-                                setSelectedActivityId(activity.id);
-                                setIsReflectionModalOpen(true);
-                                loadReflections(activity.id);
-                              }}
-                            >
-                              + 振り返りを追加
-                            </Button>
+                            {(!reflections[activity.id] || reflections[activity.id].length === 0) && (
+                              <Button
+                                variant="ghost"
+                                className="text-sm"
+                                onClick={() => {
+                                  setSelectedActivityId(activity.id);
+                                  setIsReflectionModalOpen(true);
+                                  loadReflections(activity.id);
+                                }}
+                              >
+                                + 振り返りを書く
+                              </Button>
+                            )}
                             {reflections[activity.id] && reflections[activity.id].length > 0 && (
                               <div className="mt-4 space-y-3">
                                 {reflections[activity.id].map((reflection) => (
@@ -841,12 +843,15 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
           <Textarea
             label="振り返り内容"
             name="content"
-            rows={6}
+            rows={8}
             defaultValue={selectedReflection?.content || ''}
             required
             disabled={loading}
             placeholder="トレーナーとの対話内容や気づきを記入してください"
           />
+          <p className="text-xs text-text-secondary">
+            追記したい場合は、本文の末尾に追加して保存してください
+          </p>
           {error && <div className="text-error text-sm">{error}</div>}
           <div className="flex gap-4">
             <Button type="submit" variant="primary" disabled={loading}>

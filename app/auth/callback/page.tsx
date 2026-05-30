@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { syncMyEmailFromAuth } from '@/lib/actions/me';
 
 // Supabase 招待メール / マジックリンクから戻ってくるコールバックページ。
 // 既存セッション(別ユーザーでログイン済みなど)があっても、
@@ -29,8 +30,13 @@ export default function AuthCallbackPage() {
     const next = searchParams.get('next') || defaultNext;
 
     (async () => {
-      // 既存の管理者セッション等が残っていると新ユーザー処理に紛れ込むため、先に破棄する
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      const isEmailFlow = queryType === 'email_change' || queryType === 'email';
+      if (!isEmailFlow) {
+        // 招待・パスワードリセット等のフローでは、別ユーザーのセッションが残っていると
+        // 新ユーザー処理に紛れ込むため先に破棄する。
+        // メール変更フローでは既存セッションを保持しないと verifyOtp が失敗するのでスキップ。
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      }
 
       // verifyOtp Flow: ?token_hash= で検証（メールテンプレで明示的に組む形式）
       if (tokenHash && queryType) {
@@ -44,6 +50,9 @@ export default function AuthCallbackPage() {
             | 'signup'
             | 'email_change',
         });
+        if (!error && (queryType === 'email_change' || queryType === 'email')) {
+          await syncMyEmailFromAuth().catch(() => {});
+        }
         window.location.href = error ? '/login' : next;
         return;
       }

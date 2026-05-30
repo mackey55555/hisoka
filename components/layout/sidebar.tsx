@@ -70,6 +70,12 @@ export function Sidebar({ role, teamSlug }: SidebarProps) {
     </svg>
   );
 
+  const UserIcon = ({ isActive }: { isActive: boolean }) => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  );
+
   // メニュー1行は通常のリンク or 区切り線
   type IconComponent = ({ isActive }: { isActive: boolean }) => React.ReactNode;
   type MenuRow =
@@ -81,6 +87,8 @@ export function Sidebar({ role, teamSlug }: SidebarProps) {
     { href: `${base}/dashboard/ai`, label: 'AI診断', icon: AiIcon },
     { href: `${base}/goals`, label: '目標一覧', icon: ListIcon },
     { href: `${base}/goals/new`, label: '新規目標', icon: PlusIcon },
+    { divider: true },
+    { href: `${base}/me`, label: 'マイページ', icon: UserIcon },
   ];
 
   // BUG-005 対応: trainer は trainee 機能を併用する（自分の目標管理）。
@@ -92,12 +100,16 @@ export function Sidebar({ role, teamSlug }: SidebarProps) {
     { href: `${base}/goals/new`, label: '新規目標', icon: PlusIcon },
     { divider: true },
     { href: `${base}/trainer/dashboard`, label: '担当トレーニー', icon: TrainerIcon },
+    { divider: true },
+    { href: `${base}/me`, label: 'マイページ', icon: UserIcon },
   ];
 
   const adminMenuItems: MenuRow[] = [
     { href: `${base}/admin`, label: '管理画面', icon: HomeIcon },
     { href: `${base}/admin/users`, label: 'ユーザー管理', icon: UsersIcon },
     { href: `${base}/admin/trainers`, label: 'トレーナー管理', icon: TrainerIcon },
+    { divider: true },
+    { href: `${base}/me`, label: 'マイページ', icon: UserIcon },
   ];
 
   const menuItems = role === 'admin' ? adminMenuItems : role === 'trainer' ? trainerMenuItems : traineeMenuItems;

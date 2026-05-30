@@ -58,6 +58,17 @@ export interface Reflection {
   activity?: Activity;
 }
 
+export interface MonthlyReflection {
+  id: string;
+  user_id: string;
+  team_id: string;
+  year: number;
+  month: number;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // --- AI機能 ---
 
 export type TraitKey =
