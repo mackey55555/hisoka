@@ -319,30 +319,10 @@ export function NotificationSettingsCard({
               label="朝のリマインダー（8:00 JST）"
               hint="今日も書きませんか"
             />
-            <PrefToggle
-              checked={prefs.daily_evening}
-              onChange={(v) => setPrefs({ ...prefs, daily_evening: v })}
-              label="夕方のリマインダー（21:00 JST）"
-              hint="今日の活動を振り返ってみませんか"
-            />
-            <PrefToggle
-              checked={prefs.monthly_reflection}
-              onChange={(v) => setPrefs({ ...prefs, monthly_reflection: v })}
-              label="月次振り返りリマインダー"
-              hint="月末に1回"
-            />
-            <PrefToggle
-              checked={prefs.streak_warning}
-              onChange={(v) => setPrefs({ ...prefs, streak_warning: v })}
-              label="ストリーク警告"
-              hint="連続記録が途切れそうな夜に"
-            />
-            <PrefToggle
-              checked={prefs.trainer_message}
-              onChange={(v) => setPrefs({ ...prefs, trainer_message: v })}
-              label="トレーナーからの通知"
-              hint="コメントなど（将来機能）"
-            />
+
+            <p className="text-xs text-text-secondary pt-1 leading-relaxed">
+              夕方のリマインダー・月次振り返り・ストリーク警告・トレーナーからの通知などは順次追加予定です。
+            </p>
           </div>
 
           <Button variant="primary" onClick={handleSavePrefs} disabled={busy}>
