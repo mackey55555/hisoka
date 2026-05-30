@@ -73,7 +73,6 @@ export async function unsubscribeFromPush(teamSlug: string, endpoint: string) {
 }
 
 export interface NotificationPreferences {
-  daily_morning: boolean;
   daily_evening: boolean;
   monthly_reflection: boolean;
   streak_warning: boolean;
@@ -83,8 +82,7 @@ export interface NotificationPreferences {
 }
 
 const DEFAULT_PREFERENCES: NotificationPreferences = {
-  daily_morning: true,
-  daily_evening: false,
+  daily_evening: true,
   monthly_reflection: true,
   streak_warning: true,
   trainer_message: true,
@@ -127,7 +125,6 @@ export async function getMyPreferences(teamSlug: string): Promise<{
 }
 
 const updatePreferencesSchema = z.object({
-  daily_morning: z.boolean(),
   daily_evening: z.boolean(),
   monthly_reflection: z.boolean(),
   streak_warning: z.boolean(),

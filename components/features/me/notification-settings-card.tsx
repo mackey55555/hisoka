@@ -314,14 +314,14 @@ export function NotificationSettingsCard({
             <p className="text-sm font-bold text-text-primary">通知の種類</p>
 
             <PrefToggle
-              checked={prefs.daily_morning}
-              onChange={(v) => setPrefs({ ...prefs, daily_morning: v })}
-              label="朝のリマインダー（8:00 JST）"
-              hint="今日も書きませんか"
+              checked={prefs.daily_evening}
+              onChange={(v) => setPrefs({ ...prefs, daily_evening: v })}
+              label="夕方のリマインダー（18:00 JST）"
+              hint="今日やったことを書きませんか"
             />
 
             <p className="text-xs text-text-secondary pt-1 leading-relaxed">
-              夕方のリマインダー・月次振り返り・ストリーク警告・トレーナーからの通知などは順次追加予定です。
+              月次振り返り・ストリーク警告・トレーナーからの通知などは順次追加予定です。
             </p>
           </div>
 

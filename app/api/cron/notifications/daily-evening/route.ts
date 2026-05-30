@@ -6,7 +6,7 @@ export const maxDuration = 60;
 interface PreferenceRow {
   user_id: string;
   team_id: string;
-  daily_morning: boolean;
+  daily_evening: boolean;
 }
 
 interface SubRow extends PushSubscriptionRow {
@@ -41,29 +41,29 @@ export async function GET(request: Request) {
   const userIds = Array.from(new Set(subs.map((s) => s.user_id)));
   const { data: prefsRaw } = await admin
     .from('notification_preferences')
-    .select('user_id, team_id, daily_morning')
+    .select('user_id, team_id, daily_evening')
     .in('user_id', userIds);
 
   const prefs = (prefsRaw as PreferenceRow[]) || [];
   const prefMap = new Map<string, boolean>(
-    prefs.map((p) => [`${p.user_id}:${p.team_id}`, p.daily_morning])
+    prefs.map((p) => [`${p.user_id}:${p.team_id}`, p.daily_evening])
   );
 
-  // 3. daily_morning が ON (or 未設定でデフォルト ON) の subscription だけ残す
+  // 3. daily_evening が ON (or 未設定でデフォルト ON) の subscription だけ残す
   const eligible = subs.filter((s) => {
     const pref = prefMap.get(`${s.user_id}:${s.team_id}`);
     return pref === undefined || pref === true;
   });
 
   if (eligible.length === 0) {
-    return Response.json({ eligible: 0, sent: 0, message: 'daily_morning ON のユーザーなし' });
+    return Response.json({ eligible: 0, sent: 0, message: 'daily_evening ON のユーザーなし' });
   }
 
   // 4. 送信
   const today = new Date().toISOString().slice(0, 10);
   const payload = {
     title: 'Hisoka',
-    body: 'おはようございます。今日もどうですか？',
+    body: '今日もお疲れさまでした。今日やったことを記録しませんか？',
     url: '/',
     tag: `hisoka-daily-${today}`,
   };
@@ -78,7 +78,7 @@ export async function GET(request: Request) {
     await (admin as any).from('notification_deliveries').insert({
       user_id: sub.user_id,
       subscription_id: sub.id,
-      kind: 'daily_morning',
+      kind: 'daily_evening',
       status: result.ok ? 'sent' : result.gone ? 'expired' : 'failed',
       payload,
       error: result.ok ? null : result.error,
