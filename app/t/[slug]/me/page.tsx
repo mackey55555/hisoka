@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { MeForm } from '@/components/features/me/me-form';
+import { NotificationSettingsCard } from '@/components/features/me/notification-settings-card';
+import { getMyPreferences } from '@/lib/actions/push-notifications';
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'チーム管理者',
@@ -21,11 +23,14 @@ export default async function MePage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('name, email')
-    .eq('id', user.id)
-    .single();
+  const [{ data: userData }, prefsResult] = await Promise.all([
+    supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', user.id)
+      .single(),
+    getMyPreferences(slug),
+  ]);
 
   const userDataTyped = userData as { name: string; email: string } | null;
 
@@ -38,12 +43,20 @@ export default async function MePage({
         </p>
       </div>
 
-      <MeForm
-        teamSlug={slug}
-        currentName={userDataTyped?.name || ''}
-        currentEmail={user.email || ''}
-        roleLabel={ROLE_LABELS[team.role] || team.role}
-      />
+      <div className="space-y-6">
+        <MeForm
+          teamSlug={slug}
+          currentName={userDataTyped?.name || ''}
+          currentEmail={user.email || ''}
+          roleLabel={ROLE_LABELS[team.role] || team.role}
+        />
+
+        <NotificationSettingsCard
+          teamSlug={slug}
+          initialPreferences={prefsResult.data}
+          hasSubscription={prefsResult.hasSubscription}
+        />
+      </div>
     </div>
   );
 }
