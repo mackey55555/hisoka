@@ -8,6 +8,7 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
   updateMyPreferences,
+  sendTestNotification,
   type NotificationPreferences,
 } from '@/lib/actions/push-notifications';
 
@@ -156,6 +157,24 @@ export function NotificationSettingsCard({
     setBusy(false);
   };
 
+  const handleTestSend = async () => {
+    setBusy(true);
+    setError('');
+    setSuccess('');
+    const result = await sendTestNotification(teamSlug);
+    if (result.error) {
+      flash('error', result.error);
+    } else {
+      const parts = [
+        `送信 ${result.sent}件`,
+        result.failed ? `失敗 ${result.failed}件` : null,
+        result.expired ? `期限切れ ${result.expired}件` : null,
+      ].filter(Boolean);
+      flash('success', `テスト通知を送りました（${parts.join(' / ')}）`);
+    }
+    setBusy(false);
+  };
+
   const handleSavePrefs = async () => {
     setBusy(true);
     setError('');
@@ -235,16 +254,21 @@ export function NotificationSettingsCard({
 
       {canSubscribe && subscribed && (
         <div className="space-y-5">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <span className="inline-flex items-center gap-2 text-sm text-success font-medium">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
               通知が有効です
             </span>
-            <Button variant="ghost" onClick={handleUnsubscribe} disabled={busy} className="text-sm">
-              解除する
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={handleTestSend} disabled={busy} className="text-sm">
+                テスト送信
+              </Button>
+              <Button variant="ghost" onClick={handleUnsubscribe} disabled={busy} className="text-sm">
+                解除する
+              </Button>
+            </div>
           </div>
 
           <div className="pt-4 border-t border-border space-y-3">

@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { getAdminClient } from '@/lib/supabase/admin';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
+import { sendPushTo, type PushSubscriptionRow } from '@/lib/push/send';
 
 const subscriptionSchema = z.object({
   endpoint: z.string().url(),
@@ -133,6 +135,64 @@ const updatePreferencesSchema = z.object({
   quiet_hours_start: z.number().int().min(0).max(23).nullable(),
   quiet_hours_end: z.number().int().min(0).max(23).nullable(),
 });
+
+export async function sendTestNotification(teamSlug: string) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: '認証が必要です' };
+
+  const { data: subs } = await supabase
+    .from('push_subscriptions')
+    .select('id, endpoint, p256dh, auth')
+    .eq('user_id', user.id)
+    .eq('team_id', team.teamId)
+    .eq('enabled', true);
+
+  const subscriptions = (subs as PushSubscriptionRow[] | null) || [];
+  if (subscriptions.length === 0) {
+    return { error: '有効な subscription がありません。先に通知を有効化してください。' };
+  }
+
+  const payload = {
+    title: 'Hisoka からのテスト通知',
+    body: '通知が正常に届いています。',
+    url: `/t/${team.slug}/me`,
+    tag: 'hisoka-test',
+  };
+
+  const admin = getAdminClient();
+  let sent = 0;
+  let failed = 0;
+  let expired = 0;
+
+  for (const sub of subscriptions) {
+    const result = await sendPushTo(sub, payload);
+
+    await (admin as any).from('notification_deliveries').insert({
+      user_id: user.id,
+      subscription_id: sub.id,
+      kind: 'test',
+      status: result.ok ? 'sent' : result.gone ? 'expired' : 'failed',
+      payload,
+      error: result.ok ? null : result.error,
+    });
+
+    if (result.ok) {
+      sent++;
+    } else if (result.gone) {
+      expired++;
+      await (admin as any)
+        .from('push_subscriptions')
+        .update({ enabled: false })
+        .eq('id', sub.id);
+    } else {
+      failed++;
+    }
+  }
+
+  return { success: true, sent, failed, expired, total: subscriptions.length };
+}
 
 export async function updateMyPreferences(
   teamSlug: string,
