@@ -94,15 +94,18 @@ export function NotificationSettingsCard({
         return;
       }
 
-      // Service Worker が登録されているか先にチェック（dev など SW 無効環境を弾く）
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      if (registrations.length === 0) {
-        flash(
-          'error',
-          'Service Workerが登録されていません。本番URLからアクセスしているか確認してください（ローカル開発では動きません）'
-        );
-        setBusy(false);
-        return;
+      // Service Worker の状態確認
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        // まだ登録されてない（layout の register が走る前）→ ここで登録
+        try {
+          registration = await navigator.serviceWorker.register('/sw.js');
+        } catch (regErr) {
+          const msg = regErr instanceof Error ? regErr.message : String(regErr);
+          flash('error', 'Service Worker の登録に失敗しました: ' + msg);
+          setBusy(false);
+          return;
+        }
       }
 
       const perm = await Notification.requestPermission();
@@ -113,13 +116,32 @@ export function NotificationSettingsCard({
         return;
       }
 
-      // serviceWorker.ready は SW が active になるまで待つが、念のため10秒でタイムアウト
-      const registration = await Promise.race([
-        navigator.serviceWorker.ready,
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Service Worker の準備がタイムアウトしました')), 10000)
-        ),
-      ]);
+      // SW が active になるまで待つ（初回は precache に時間がかかる）。最大30秒。
+      if (!registration.active) {
+        const sw = registration.installing || registration.waiting;
+        if (sw) {
+          await new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(
+              () => reject(new Error('Service Worker のインストールがタイムアウトしました（30秒）。ページを再読み込みして再度お試しください')),
+              30000
+            );
+            sw.addEventListener('statechange', () => {
+              if (sw.state === 'activated') {
+                clearTimeout(timeout);
+                resolve();
+              }
+            });
+          });
+        } else {
+          // installing/waiting も無い → ready で待つ（フォールバック）
+          await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Service Worker の準備がタイムアウトしました')), 30000)
+            ),
+          ]);
+        }
+      }
       const existing = await registration.pushManager.getSubscription();
       if (existing) {
         await existing.unsubscribe();
