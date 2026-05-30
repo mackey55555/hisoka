@@ -94,6 +94,17 @@ export function NotificationSettingsCard({
         return;
       }
 
+      // Service Worker が登録されているか先にチェック（dev など SW 無効環境を弾く）
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      if (registrations.length === 0) {
+        flash(
+          'error',
+          'Service Workerが登録されていません。本番URLからアクセスしているか確認してください（ローカル開発では動きません）'
+        );
+        setBusy(false);
+        return;
+      }
+
       const perm = await Notification.requestPermission();
       setEnv((s) => ({ ...s, permission: perm }));
       if (perm !== 'granted') {
@@ -102,7 +113,13 @@ export function NotificationSettingsCard({
         return;
       }
 
-      const registration = await navigator.serviceWorker.ready;
+      // serviceWorker.ready は SW が active になるまで待つが、念のため10秒でタイムアウト
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Service Worker の準備がタイムアウトしました')), 10000)
+        ),
+      ]);
       const existing = await registration.pushManager.getSubscription();
       if (existing) {
         await existing.unsubscribe();
