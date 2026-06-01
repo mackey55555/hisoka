@@ -8,7 +8,7 @@ import { getMyMonthlyReflection } from '@/lib/actions/monthly-reflections';
 import { createClient } from '@/lib/supabase/server';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { formatYmd } from '@/lib/utils/helpers';
-import { ProgressCharts } from '@/components/features/dashboard/progress-charts';
+import { ProgressCharts } from '@/components/features/dashboard/progress-charts-lazy';
 import { GoalsListSection } from '@/components/features/dashboard/goals-list-section';
 import { StreakCard } from '@/components/features/dashboard/streak-card';
 import { MorningCard } from '@/components/features/dashboard/morning-card';

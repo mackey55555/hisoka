@@ -12,6 +12,55 @@ const PUBLIC_PATHS = [
 const LAST_TEAM_COOKIE = 'hisoka_last_team';
 const LAST_TEAM_MAX_AGE = 60 * 60 * 24 * 365;
 
+// 認可情報（チーム一覧 + SuperAdmin フラグ）をミドルウェア用にキャッシュする
+// 短時間 cookie。同じユーザー内で 5 分間は team_members / users の DB を引かない。
+// RLS でデータアクセスは別途守られているので、forgery しても実害は出ない設計。
+const SESSION_CACHE_COOKIE = 'hisoka_mw_cache';
+const SESSION_CACHE_TTL_SEC = 5 * 60;
+
+interface SessionCache {
+  uid: string;
+  slugs: string[];
+  sa: boolean;
+  exp: number;
+}
+
+function readSessionCache(
+  request: NextRequest,
+  currentUserId: string
+): { slugs: string[]; isSuperAdmin: boolean } | null {
+  const raw = request.cookies.get(SESSION_CACHE_COOKIE)?.value;
+  if (!raw) return null;
+  try {
+    const decoded = JSON.parse(atob(raw)) as SessionCache;
+    if (decoded.uid !== currentUserId) return null;
+    if (decoded.exp < Math.floor(Date.now() / 1000)) return null;
+    return { slugs: decoded.slugs || [], isSuperAdmin: Boolean(decoded.sa) };
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCache(
+  response: NextResponse,
+  userId: string,
+  slugs: string[],
+  isSuperAdmin: boolean
+) {
+  const payload: SessionCache = {
+    uid: userId,
+    slugs,
+    sa: isSuperAdmin,
+    exp: Math.floor(Date.now() / 1000) + SESSION_CACHE_TTL_SEC,
+  };
+  response.cookies.set(SESSION_CACHE_COOKIE, btoa(JSON.stringify(payload)), {
+    maxAge: SESSION_CACHE_TTL_SEC,
+    path: '/',
+    sameSite: 'lax',
+    httpOnly: true,
+  });
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -77,23 +126,34 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 認証済み: 所属チーム数 + SuperAdmin フラグを確認
-  const { data: memberRows } = await supabase
-    .from('team_members' as any)
-    .select('team_id, teams:team_id ( slug )')
-    .eq('user_id', user.id)
-    .eq('status', 'active');
+  // 認証済み: cookie キャッシュを試す
+  let slugs: string[];
+  let isSuperAdmin: boolean;
+  const cached = readSessionCache(request, user.id);
+  if (cached) {
+    slugs = cached.slugs;
+    isSuperAdmin = cached.isSuperAdmin;
+  } else {
+    // キャッシュなし: DB から取得
+    const { data: memberRows } = await supabase
+      .from('team_members' as any)
+      .select('team_id, teams:team_id ( slug )')
+      .eq('user_id', user.id)
+      .eq('status', 'active');
 
-  const slugs: string[] = (memberRows as any[] | null)
-    ?.map((r) => r.teams?.slug)
-    .filter((s): s is string => Boolean(s)) ?? [];
+    slugs = (memberRows as any[] | null)
+      ?.map((r) => r.teams?.slug)
+      .filter((s): s is string => Boolean(s)) ?? [];
 
-  const { data: meRow } = await supabase
-    .from('users')
-    .select('is_super_admin' as any)
-    .eq('id', user.id)
-    .maybeSingle();
-  const isSuperAdmin = Boolean((meRow as any)?.is_super_admin);
+    const { data: meRow } = await supabase
+      .from('users')
+      .select('is_super_admin' as any)
+      .eq('id', user.id)
+      .maybeSingle();
+    isSuperAdmin = Boolean((meRow as any)?.is_super_admin);
+
+    writeSessionCache(supabaseResponse, user.id, slugs, isSuperAdmin);
+  }
 
   // /super-admin/* は SuperAdmin のみ
   if (path === '/super-admin' || path.startsWith('/super-admin/')) {
