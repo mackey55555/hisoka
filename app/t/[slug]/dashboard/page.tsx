@@ -61,10 +61,9 @@ export default async function DashboardPage({
   const thisMonth = new Date().getMonth();
   const thisYear = new Date().getFullYear();
 
+  // 6ヶ月で十分：ヒートマップ(12週)・月別チャート(6ヶ月)・今月カウント すべて賄える
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  const oneYearAgo = new Date();
-  oneYearAgo.setDate(oneYearAgo.getDate() - 365);
 
   const [
     { data: allActivities },
@@ -77,15 +76,16 @@ export default async function DashboardPage({
           .from('activities')
           .select('id, goal_id, created_at')
           .in('goal_id', goalIds)
-          .gte('created_at', oneYearAgo.toISOString())
+          .gte('created_at', sixMonthsAgo.toISOString())
           .order('created_at', { ascending: false })
       : Promise.resolve({ data: [] as Array<{ id: string; goal_id: string; created_at: string }> }),
+    // MorningCardのピックアップ用。1件しか引かないので15件で十分
     supabase
       .from('reflections')
-      .select('*, activities!inner(goal_id, goals!inner(user_id))')
+      .select('id, activity_id, content, created_at, updated_at, activities!inner(goal_id, goals!inner(user_id))')
       .eq('activities.goals.user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(50),
+      .limit(15),
     getMyDiagnosis(slug, thisYear, thisMonth + 1),
     getMyMonthlyReflection(slug, thisYear, thisMonth + 1),
   ]);
@@ -102,9 +102,8 @@ export default async function DashboardPage({
     return d.getFullYear() === thisYear && d.getMonth() === thisMonth;
   }).length;
 
-  const activitiesForCharts = activities.filter((a) => {
-    return new Date(a.created_at) >= sixMonthsAgo;
-  });
+  // activities自体が既に6ヶ月以内なのでそのままチャートに渡せる
+  const activitiesForCharts = activities;
 
   const activityDates = activities.map((a) => formatYmd(a.created_at));
 

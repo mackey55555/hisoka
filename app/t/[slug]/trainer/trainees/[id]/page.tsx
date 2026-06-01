@@ -17,61 +17,58 @@ export default async function TraineeDetailPage({
     notFound();
   }
 
-  const { data: assignment } = await supabase
-    .from('trainer_trainees')
-    .select('trainee_id')
-    .eq('trainer_id', user.id)
-    .eq('trainee_id', params.id)
-    .single();
+  // assignment / trainee / goals は独立しているので並列で取る
+  const [
+    { data: assignment },
+    { data: trainee },
+    { data: goalsData },
+  ] = await Promise.all([
+    supabase
+      .from('trainer_trainees')
+      .select('trainee_id')
+      .eq('trainer_id', user.id)
+      .eq('trainee_id', params.id)
+      .single(),
+    supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', params.id)
+      .single(),
+    supabase
+      .from('goals')
+      .select('*')
+      .eq('user_id', params.id)
+      .order('created_at', { ascending: false }),
+  ]);
 
-  if (!assignment) {
-    notFound();
-  }
-
-  const { data: trainee } = await supabase
-    .from('users')
-    .select('id, name, email')
-    .eq('id', params.id)
-    .single();
-
-  if (!trainee) {
+  if (!assignment || !trainee) {
     notFound();
   }
 
   const traineeTyped = trainee as { id: string; name: string; email: string };
-
-  const { data: goalsData } = await supabase
-    .from('goals')
-    .select('*')
-    .eq('user_id', params.id)
-    .order('created_at', { ascending: false });
-
   const goals: Goal[] = (goalsData as Goal[] | null) || [];
   const goalIds = goals.map((g) => g.id);
 
-  const { data: activitiesData } =
+  // activities と reflections は join + 並列で同時取得（旧: シーケンシャル）
+  const [activitiesResult, reflectionsResult] =
     goalIds.length > 0
-      ? await supabase
-          .from('activities')
-          .select('*')
-          .in('goal_id', goalIds)
-          .order('created_at', { ascending: false })
-      : { data: [] };
+      ? await Promise.all([
+          supabase
+            .from('activities')
+            .select('*')
+            .in('goal_id', goalIds)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('reflections')
+            .select('id, activity_id, content, created_at, updated_at, activities!inner(goal_id)')
+            .in('activities.goal_id', goalIds)
+            .order('created_at', { ascending: false }),
+        ])
+      : [{ data: [] }, { data: [] }];
 
-  const activities: Activity[] = (activitiesData as Activity[] | null) || [];
-  const activityIds = activities.map((a) => a.id);
-
-  const { data: reflectionsData } =
-    activityIds.length > 0
-      ? await supabase
-          .from('reflections')
-          .select('*')
-          .in('activity_id', activityIds)
-          .order('created_at', { ascending: false })
-      : { data: [] };
-
+  const activities: Activity[] = (activitiesResult.data as Activity[] | null) || [];
   const reflections: Reflection[] =
-    (reflectionsData as Reflection[] | null) || [];
+    (reflectionsResult.data as Reflection[] | null) || [];
 
   const activitiesByGoalId: Record<string, Activity[]> = {};
   for (const a of activities) {
