@@ -3,7 +3,7 @@ import './globals.css';
 import { ServiceWorkerRegister } from '@/components/pwa/sw-register';
 
 export const metadata: Metadata = {
-  title: 'HISOKA - 数字に表れない、人の価値を経営に届ける',
+  title: 'Hisoka - 数字に表れない、人の価値を経営に届ける',
   description:
     'KPIの達成はAIがやる時代。数字に表れない現場のがんばりと人らしさ（定性）を、AIが伴走しながら可視化し、経営に届ける目標管理ツール。',
   manifest: '/manifest.json',

@@ -32,7 +32,7 @@ export function LandingPage() {
           <p className="mt-8 text-lg md:text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
             メンバーが何を考え、どう動き、どう乗り越えたか。
             <br className="hidden md:block" />
-            HISOKAは、KPIの裏にある“人のがんばり”を可視化し、経営に届けます。
+            Hisokaは、KPIの裏にある“人のがんばり”を可視化し、経営に届けます。
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login">
@@ -106,7 +106,7 @@ export function LandingPage() {
             人の価値をどう見るか」。
           </p>
           <p className="mt-8 text-lg text-text-secondary leading-relaxed">
-            HISOKAは、その問いに向き合う経営者のためのツールです。
+            Hisokaは、その問いに向き合う経営者のためのツールです。
           </p>
         </div>
       </section>
@@ -208,7 +208,7 @@ export function LandingPage() {
           <p className="mt-6 text-lg text-white/85 max-w-2xl mx-auto leading-relaxed">
             効率や達成率は、もちろん大事。でもそれ以上に、
             「人の温かさ・人らしさ」に投資したいと考えるあなたに、
-            HISOKAは寄り添います。
+            Hisokaは寄り添います。
           </p>
         </div>
       </section>
@@ -256,7 +256,7 @@ export function LandingPage() {
       {/* フッター */}
       <footer className="bg-background border-t border-border">
         <div className="container mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-text-secondary">
-          <span className="font-bold text-primary">HISOKA</span>
+          <span className="font-bold text-primary">Hisoka</span>
           <span>© {2026} Hisoka</span>
         </div>
       </footer>
