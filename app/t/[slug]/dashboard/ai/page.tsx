@@ -2,8 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getMyDiagnosis, getMyDiagnosisHistory } from '@/lib/actions/ai';
 import { MonthNavigator } from '@/components/features/ai/month-navigator';
 import { SummaryCard } from '@/components/features/ai/summary-card';
-import { SentimentSection } from '@/components/features/ai/sentiment-section';
-import { PersonalitySection } from '@/components/features/ai/personality-section';
+import { SentimentSection } from '@/components/features/ai/sentiment-section-lazy';
+import { PersonalitySection } from '@/components/features/ai/personality-section-lazy';
 import { Card } from '@/components/ui/card';
 
 interface PageProps {

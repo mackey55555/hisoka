@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/server';
 import { getAllTraineesLatestDiagnosis } from '@/lib/actions/ai';
-import { TraineeAiCard } from '@/components/features/ai/trainee-ai-card';
+import { TraineeAiCard } from '@/components/features/ai/trainee-ai-card-lazy';
 
 export default async function TrainerDashboardPage({
   params,
