@@ -17,18 +17,23 @@ export default async function TrainerDashboardPage({
     return null;
   }
 
-  const { data: assignments } = await (supabase as any)
-    .from('trainer_trainees')
-    .select('trainee_id, trainee:users!trainer_trainees_trainee_id_fkey(id, name, email)')
-    .eq('trainer_id', user.id);
+  // assignments と AI診断は独立なので並列で取得
+  const [
+    { data: assignments },
+    { data: aiData },
+  ] = await Promise.all([
+    (supabase as any)
+      .from('trainer_trainees')
+      .select('trainee_id, trainee:users!trainer_trainees_trainee_id_fkey(id, name, email)')
+      .eq('trainer_id', user.id),
+    getAllTraineesLatestDiagnosis(slug),
+  ]);
 
   const trainees =
     (assignments ?? [])
       .map((a: any) => a.trainee)
       .filter((t: any): t is { id: string; name: string; email: string } => Boolean(t?.id));
   const hasAssignmentsButNoProfiles = (assignments?.length || 0) > 0 && trainees.length === 0;
-
-  const { data: aiData } = await getAllTraineesLatestDiagnosis(slug);
 
   return (
     <div className="container mx-auto px-4 py-8">
