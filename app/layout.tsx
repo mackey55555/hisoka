@@ -38,6 +38,14 @@ export default function RootLayout({
         {/* appleWebApp の capable: true は古い `apple-mobile-web-app-capable` メタタグを出すため、
             新しい標準である `mobile-web-app-capable` も追加して deprecation 警告を抑える */}
         <meta name="mobile-web-app-capable" content="yes" />
+        {/* フォントは <link rel="preconnect"> + <link rel="stylesheet"> で読み込む。
+            globals.css の @import url(...) より速い（CSSパース待ちが無くなる）。 */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
+        />
       </head>
       <body>
         <ServiceWorkerRegister />
