@@ -34,6 +34,16 @@ export default async function AdminPage({
             </p>
           </Card>
         </Link>
+        <Link href={`/t/${slug}/admin/billing`}>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <h2 className="text-xl font-bold text-text-primary mb-2">
+              プラン・お支払い
+            </h2>
+            <p className="text-text-secondary">
+              プランの確認・アップグレード・お支払い管理
+            </p>
+          </Card>
+        </Link>
       </div>
     </div>
   );

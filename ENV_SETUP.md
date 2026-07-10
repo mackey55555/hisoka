@@ -25,6 +25,37 @@ SUPABASE_SECRET_KEY=your_supabase_secret_key
 
 **重要**: Secret keyは特権アクセス権限があるため、絶対にGitにコミットしないでください。
 
+### AIモデル（任意）
+
+```env
+# provider:model-id 形式。未設定なら google:gemini-2.5-flash-lite。
+# Claude Sonnet 4.6 へ切り替える場合:
+AI_MODEL=anthropic:claude-sonnet-4-6
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxx
+```
+
+### Stripe 課金（本番で必須 / ローカルは任意）
+
+チームごとのサブスク課金（Starter ¥30,000 / Pro ¥50,000）に必要です。
+
+```env
+STRIPE_SECRET_KEY=sk_test_xxxxxxxx          # 開発者 → APIキー。本番は制限付きキー(rk_)推奨
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxx        # Webhook エンドポイント作成時に発行される署名シークレット
+STRIPE_PRICE_STARTER=price_xxxxxxxx         # Starter(月額¥30,000)の Price ID
+STRIPE_PRICE_PRO=price_xxxxxxxx             # Pro(月額¥50,000)の Price ID
+NEXT_PUBLIC_SITE_URL=https://your-domain    # Checkout/Portal の戻り先。未設定ならlocalhost:3000
+```
+
+**セットアップ手順（Stripe 側）**:
+1. Stripe ダッシュボードで Product を2つ作成し、それぞれ月額 Price（JPY, recurring/月）を作る → Price ID を上記に設定。
+2. **開発者 → Webhook** で エンドポイント `https://<ドメイン>/api/webhooks/stripe` を追加。購読イベント:
+   `checkout.session.completed` / `customer.subscription.created` / `customer.subscription.updated` / `customer.subscription.deleted`。
+   → 発行された署名シークレットを `STRIPE_WEBHOOK_SECRET` に設定。
+3. **Customer Portal** を有効化（設定 → Billing → Customer portal）。プラン変更・解約に使用。
+4. ローカルで Webhook を試すには `stripe listen --forward-to localhost:3000/api/webhooks/stripe`（Stripe CLI）。
+
+**重要**: `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` は秘密情報。Gitにコミットしないこと。
+
 ## 3. Supabaseの認証情報を取得する方法
 
 ### ステップ1: Supabaseプロジェクトを作成
