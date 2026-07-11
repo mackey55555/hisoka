@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import { getStripe, planForPriceId } from '@/lib/stripe/client';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { getPlanConfig, PLANS } from '@/lib/plan/plans';
+import { enforceSeatLimit, restoreAutoLockedSeats } from '@/lib/plan/seat-enforcement';
 
 // 署名検証のため raw body が必要。Node ランタイムで動かす。
 export const runtime = 'nodejs';
@@ -131,6 +132,10 @@ async function syncSubscription(
     .update(update)
     .eq('id', teamId);
   if (error) console.error('[stripe-webhook] teams 更新失敗:', error);
+
+  // アップグレード/再課金で枠が増えたら、降格時に自動ロックしたメンバーを復帰させる。
+  const restored = await restoreAutoLockedSeats(admin, teamId, cfg.maxMembers);
+  if (restored > 0) console.log(`[stripe-webhook] ${restored}名を自動復帰 team=${teamId}`);
 }
 
 /** 解約(sub 完全削除)時に Free へ戻す。 */
@@ -167,6 +172,10 @@ async function downgradeToFree(subscription: Stripe.Subscription) {
     })
     .eq('id', teamId);
   if (error) console.error('[stripe-webhook] Free ダウングレード失敗:', error);
+
+  // Free の上限を超えるメンバーは即ロック（fail closed）。削除はしない＝再課金で復帰。
+  const locked = await enforceSeatLimit(admin, teamId, free.maxMembers);
+  if (locked > 0) console.log(`[stripe-webhook] ${locked}名を自動ロック team=${teamId}`);
 }
 
 /**

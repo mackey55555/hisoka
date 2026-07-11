@@ -48,6 +48,12 @@ export default async function BillingPage({
 
   const row = (data as unknown as TeamBilling) ?? null;
   const currentPlan = getPlanConfig(row?.plan).id;
+
+  // 降格で自動ロックされたメンバー数（アップグレードで復帰する）
+  const { count: lockedCount } = await (admin.from('team_members' as any) as any)
+    .select('id', { count: 'exact', head: true })
+    .eq('team_id', team.teamId)
+    .not('auto_locked_at', 'is', null);
   const hasCustomer = Boolean(row?.stripe_customer_id);
   const status = row?.subscription_status ?? null;
   const periodEnd = row?.current_period_end
@@ -75,6 +81,13 @@ export default async function BillingPage({
       {checkout === 'cancel' && (
         <div className="mb-6 rounded-lg border border-border bg-surface px-4 py-3 text-sm text-text-secondary">
           お申し込みはキャンセルされました。
+        </div>
+      )}
+      {typeof lockedCount === 'number' && lockedCount > 0 && (
+        <div className="mb-6 rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-text-primary">
+          プラン上限を超えていたため、<span className="font-bold">{lockedCount}名</span>のメンバーが
+          ロック（アクセス停止）されています。上位プランにアップグレードすると、参加が早い順に自動で復帰します。
+          メンバーのデータは削除されていません。
         </div>
       )}
 
