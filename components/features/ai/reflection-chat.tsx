@@ -10,6 +10,7 @@ interface Message {
 }
 
 interface ReflectionChatProps {
+  teamSlug: string;
   goalContent: string;
   activityContent: string;
   reflectionDraft: string;
@@ -17,6 +18,7 @@ interface ReflectionChatProps {
 }
 
 export function ReflectionChat({
+  teamSlug,
   goalContent,
   activityContent,
   reflectionDraft,
@@ -52,6 +54,7 @@ export function ReflectionChat({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          teamSlug,
           messages: currentMessages.map((m) => ({ role: m.role, content: m.content })),
           goalContent,
           activityContent,
@@ -60,7 +63,19 @@ export function ReflectionChat({
       });
 
       if (!res.ok || !res.body) {
-        throw new Error('API error');
+        // プランゲート等のエラーメッセージを拾って表示する
+        let msg = 'エラーが発生しました。もう一度お試しください。';
+        try {
+          const body = await res.json();
+          if (body?.error) msg = body.error;
+        } catch {
+          /* noop */
+        }
+        setMessages((prev) => [
+          ...prev,
+          { id: `err-${Date.now()}`, role: 'assistant', content: msg },
+        ]);
+        return;
       }
 
       const reader = res.body.getReader();

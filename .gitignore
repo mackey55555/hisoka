@@ -47,3 +47,6 @@ next-env.d.ts
 
 # documentation (kept local only)
 /docs/
+# AIエージェント用スキル(アプリ本体ではない)
+.agents/
+skills-lock.json

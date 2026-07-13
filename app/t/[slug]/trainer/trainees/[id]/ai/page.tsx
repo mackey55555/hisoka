@@ -49,9 +49,14 @@ export default async function TrainerAiDetailPage({ params, searchParams }: Page
     .reverse();
 
   let questions: any[] = [];
+  let questionSuggestLocked = false;
   if (diagnosis) {
-    const { data } = await getQuestionSuggests(slug, diagnosis.id);
-    questions = data || [];
+    const res = await getQuestionSuggests(slug, diagnosis.id);
+    if ((res as any).locked) {
+      questionSuggestLocked = true;
+    } else {
+      questions = res.data || [];
+    }
   }
 
   return (
@@ -71,7 +76,15 @@ export default async function TrainerAiDetailPage({ params, searchParams }: Page
           <SummaryCard summary={diagnosis.summary} />
           <SentimentSection diagnosis={diagnosis} history={history} />
           <PersonalitySection diagnosis={diagnosis} />
-          <QuestionSuggests questions={questions} />
+          {questionSuggestLocked ? (
+            <Card>
+              <p className="text-text-secondary text-center py-6 text-sm">
+                AI質問サジェストは Starter プラン以上でご利用いただけます。
+              </p>
+            </Card>
+          ) : (
+            <QuestionSuggests questions={questions} />
+          )}
         </>
       ) : (
         <Card>

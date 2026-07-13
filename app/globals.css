@@ -28,3 +28,85 @@ body {
   overflow-x: hidden;
 }
 
+/* ============================================================
+   Landing hero — neon / near-future 表現
+   ブランドのセージグリーン(#5D7A6E)を発光色に転じた近未来ファーストビュー。
+   本文の温かい配色はそのまま、ヒーローだけダーク×グリーン発光。
+   ============================================================ */
+.hero-neon {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(1200px 620px at 50% -12%, rgba(111, 224, 166, 0.14), transparent 60%),
+    linear-gradient(180deg, #0c1512 0%, #0f1d17 55%, #0b130f 100%);
+  color: #eaf6ef;
+  overflow: hidden;
+}
+
+/* 近未来グリッド（中央ほど濃く、外側へフェード） */
+.hero-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(125, 235, 176, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 235, 176, 0.07) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 78% 62% at 50% 32%, #000 42%, transparent 82%);
+  mask-image: radial-gradient(ellipse 78% 62% at 50% 32%, #000 42%, transparent 82%);
+  pointer-events: none;
+}
+
+/* 発光オーブ */
+.hero-orb {
+  position: absolute;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(84px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.hero-orb--green { background: #45b585; }
+.hero-orb--warm { background: #c9b8a5; }
+
+/* グラデーション文字（グリーン→ブランドの温かいアクセント） */
+.text-gradient-neon {
+  background: linear-gradient(92deg, #a8f0cc 0%, #6fe0a6 46%, #d8c6b0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-glow {
+  text-shadow: 0 0 18px rgba(111, 224, 166, 0.45), 0 0 42px rgba(111, 224, 166, 0.22);
+}
+
+/* ネオン発光ボタン */
+.btn-neon {
+  box-shadow: 0 0 0 1px rgba(111, 224, 166, 0.55), 0 0 26px rgba(111, 224, 166, 0.38);
+}
+.btn-neon:hover {
+  box-shadow: 0 0 0 1px rgba(143, 240, 188, 0.8), 0 0 34px rgba(111, 224, 166, 0.55);
+}
+
+@keyframes hero-floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-18px); }
+}
+@keyframes hero-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.85; }
+}
+.anim-floaty { animation: hero-floaty 9s ease-in-out infinite; }
+.anim-floaty-slow { animation: hero-floaty 13s ease-in-out infinite; }
+.anim-glow { animation: hero-glow 3.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-floaty,
+  .anim-floaty-slow,
+  .anim-glow {
+    animation: none;
+  }
+}
+

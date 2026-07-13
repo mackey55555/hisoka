@@ -2,6 +2,7 @@ import { streamText } from 'ai';
 import { getModel } from '@/lib/ai/model';
 import { REFLECTION_SUPPORT_SYSTEM_PROMPT } from '@/lib/ai/prompts';
 import { createClient } from '@/lib/supabase/server';
+import { getTeamPlanConfigBySlug } from '@/lib/plan/team-plan';
 
 export const maxDuration = 60;
 
@@ -14,7 +15,23 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { messages, goalContent, activityContent, reflectionDraft } = await request.json();
+  const { messages, goalContent, activityContent, reflectionDraft, teamSlug } =
+    await request.json();
+
+  // プランゲート: AI振り返りサポート(対話)は Starter 以上
+  if (!teamSlug) {
+    return Response.json({ error: 'チーム情報がありません' }, { status: 400 });
+  }
+  const plan = await getTeamPlanConfigBySlug(teamSlug);
+  if (!plan) {
+    return Response.json({ error: 'チームが見つかりません' }, { status: 404 });
+  }
+  if (!plan.features.reflectionSupport) {
+    return Response.json(
+      { error: 'AI振り返りサポートは Starter プラン以上でご利用いただけます' },
+      { status: 403 }
+    );
+  }
 
   // ターン数チェック（最大3ターン）
   const userMessages = messages.filter((m: any) => m.role === 'user');

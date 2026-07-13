@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import {
   resolveTeamFromSlug,
   setLastTeamSlug,
+  listMyTeams,
 } from '@/lib/context/current-team';
 import { CurrentTeamProvider } from '@/lib/context/current-team-client';
 
@@ -36,6 +37,9 @@ export default async function TeamScopedLayout({ children, params }: Props) {
   // role に応じて Sidebar を出し分け（個別ページ側でも nested チェックを推奨）
   const sidebarRole = team.role;
 
+  // モバイルのドロワー内でグループ（チーム）切替を出すため、所属チーム一覧を渡す
+  const myTeams = await listMyTeams();
+
   return (
     <CurrentTeamProvider
       value={{
@@ -48,7 +52,7 @@ export default async function TeamScopedLayout({ children, params }: Props) {
     >
       <Header withSidebar />
       <div className="flex min-h-screen">
-        <Sidebar role={sidebarRole} teamSlug={team.slug} />
+        <Sidebar role={sidebarRole} teamSlug={team.slug} teams={myTeams} />
         <main className="flex-1 lg:ml-64 min-h-screen pt-16 lg:pt-16">
           {children}
         </main>

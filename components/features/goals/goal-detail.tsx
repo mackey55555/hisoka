@@ -774,6 +774,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
           </div>
           {showAiChat && selectedActivityId && (
             <ReflectionChat
+              teamSlug={teamSlug}
               goalContent={goal.content}
               activityContent={
                 activities.find((a) => a.id === selectedActivityId)?.content || ''

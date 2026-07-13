@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { AiDiagnosis, AiQuestionSuggest } from '@/types';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
+import { getTeamPlanConfigById } from '@/lib/plan/team-plan';
 
 /**
  * トレーニー: 自分の月次診断を取得
@@ -145,7 +146,14 @@ export async function getAllTraineesLatestDiagnosis(teamSlug: string) {
  * トレーナー: 質問サジェスト取得
  */
 export async function getQuestionSuggests(teamSlug: string, diagnosisId: string) {
-  await resolveTeamFromSlug(teamSlug);
+  const team = await resolveTeamFromSlug(teamSlug);
+
+  // プランゲート: 質問サジェストは Starter 以上
+  const plan = await getTeamPlanConfigById(team.teamId);
+  if (!plan.features.questionSuggest) {
+    return { data: null, error: null, locked: true as const };
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: '認証が必要です' };

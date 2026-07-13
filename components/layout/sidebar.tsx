@@ -7,12 +7,21 @@ import { Modal } from '../ui/modal';
 import { Button } from '../ui/button';
 import { createClient } from '@/lib/supabase/client';
 
+interface TeamSummary {
+  id: string;
+  slug: string;
+  name: string;
+  role: 'admin' | 'trainer' | 'trainee';
+}
+
 interface SidebarProps {
   role: 'trainee' | 'trainer' | 'admin';
   teamSlug: string;
+  /** 所属チーム一覧。モバイルのドロワー内グループ切替に使う */
+  teams?: TeamSummary[];
 }
 
-export function Sidebar({ role, teamSlug }: SidebarProps) {
+export function Sidebar({ role, teamSlug, teams = [] }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -172,6 +181,46 @@ export function Sidebar({ role, teamSlug }: SidebarProps) {
         
         {/* メニュー部分 */}
         <div className="flex flex-col flex-1 overflow-y-auto p-6 lg:pt-6 pt-20">
+          {/* モバイル用: グループ（チーム）切り替え。デスクトップはヘッダー右上に出るため非表示 */}
+          {teams.length > 0 && (
+            <div className="lg:hidden mb-4 pb-4 border-b border-border">
+              <p className="text-xs text-text-secondary mb-2 px-1">グループ</p>
+              {teams.length > 1 ? (
+                <div className="space-y-1">
+                  {teams.map((t) => {
+                    const isCurrent = t.slug === teamSlug;
+                    return (
+                      <Link
+                        key={t.id}
+                        href={`/t/${t.slug}/dashboard`}
+                        onClick={() => setIsOpen(false)}
+                        className={`block px-3 py-2 rounded-lg ${
+                          isCurrent
+                            ? 'bg-primary/10 text-primary font-medium'
+                            : 'text-text-primary hover:bg-background'
+                        }`}
+                      >
+                        <span className="block text-sm truncate">{t.name}</span>
+                        <span className="block text-xs text-text-secondary">{t.role}</span>
+                      </Link>
+                    );
+                  })}
+                  <Link
+                    href="/teams"
+                    onClick={() => setIsOpen(false)}
+                    className="block px-3 py-2 text-sm text-primary hover:bg-background rounded-lg"
+                  >
+                    全所属グループ一覧へ
+                  </Link>
+                </div>
+              ) : (
+                <p className="px-3 text-sm text-text-primary truncate">
+                  {teams.find((t) => t.slug === teamSlug)?.name ?? teams[0]?.name ?? ''}
+                </p>
+              )}
+            </div>
+          )}
+
           <nav className="space-y-2 flex-1">
             {menuItems.map((item, idx) => {
               if ('divider' in item) {
