@@ -1,6 +1,7 @@
 import { streamText } from 'ai';
 import { getModel } from '@/lib/ai/model';
 import { REFLECTION_SUPPORT_SYSTEM_PROMPT } from '@/lib/ai/prompts';
+import { SKILL_HINTS_BY_DOMAIN } from '@/lib/ai/skills-taxonomy';
 import { createClient } from '@/lib/supabase/server';
 import { getTeamPlanConfigBySlug } from '@/lib/plan/team-plan';
 
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
   }
 
   const systemPrompt = REFLECTION_SUPPORT_SYSTEM_PROMPT
+    .replace('{SKILL_HINTS}', SKILL_HINTS_BY_DOMAIN)
     .replace('{GOAL_CONTENT}', goalContent || '')
     .replace('{ACTIVITY_CONTENT}', activityContent || '')
     .replace('{REFLECTION_DRAFT}', reflectionDraft || '');
@@ -60,7 +62,8 @@ export async function POST(request: Request) {
 - トレーニー本人の視点（「〜しました」「〜と感じました」）で書くこと
 - 対話の中でトレーニーが語った言葉や気づきをそのまま活かすこと
 - 3〜5文程度でまとめること
-- コーチングや励ましは不要。事実と気づきだけをまとめること`
+- コーチングや励ましは不要。事実と気づきだけをまとめること
+- 対話の中で本人が「次はこうしたい」と語っていれば、最後に1文だけ、その意欲を本人視点で自然に添えてよい（無ければ無理に作らない）`
     : systemPrompt;
 
   const result = streamText({

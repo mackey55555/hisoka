@@ -46,18 +46,17 @@ export function LandingPage() {
         {/* コピー(左上寄せ) */}
         <div className="relative z-10 container mx-auto px-4 pt-10 pb-28 md:pt-16 md:pb-44">
           <div className="max-w-2xl">
-            <p className="text-sm font-medium tracking-[0.2em] text-primary mb-4">
-              非認知能力を、見つけて伸ばす
+            <p className="text-sm font-medium tracking-[0.2em] text-primary mb-4 before:content-[''] before:mr-3 before:inline-block before:h-px before:w-6 before:align-middle before:bg-primary">
+              メンバーの“密かなスキル”を見える化する組織開発SaaS
             </p>
             <h1 className="text-3xl md:text-5xl font-bold leading-[1.28] text-text-primary">
-              <span className="md:whitespace-nowrap">その“密かな”がんばりが、</span>
+              数字に表れない、
               <br />
-              あなたの才能。
+              <span className="md:whitespace-nowrap">“密かな”スキルを見える化。</span>
             </h1>
             <p className="mt-6 text-base md:text-lg text-text-primary/80 leading-relaxed">
-              仲間をつくる力、場を和ませる会話、気を利かせる心づかい——数字には出ないけれど、
-              いろんなチームで学ぶうちに、あなたの中で密かに育っている力があります。
-              密かは、それを見つけて、伸ばす。
+              目標・活動・振り返りのテキストから、AIがメンバーの非認知能力（数字に表れない力）を推測。
+              マネージャーはメンバーを深く知り、本人も自分の強みに気づいていきます。
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <Link href="/login">
@@ -102,7 +101,7 @@ export function LandingPage() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="rounded-xl border border-border bg-background p-6"
+                className="rounded-xl border border-border bg-background p-6 shadow-sm transition-shadow hover:shadow-md"
               >
                 <h3 className="font-bold text-text-primary">{item.title}</h3>
                 <p className="mt-2 text-text-secondary leading-relaxed">{item.body}</p>
@@ -114,10 +113,17 @@ export function LandingPage() {
 
       {/* ③ 思想（非認知能力） */}
       <section id="about" className="relative overflow-hidden container mx-auto px-4 py-20 md:py-28">
+        <div className="deco-orb" style={{ width: 300, height: 300, background: '#8B9D83', opacity: 0.22, top: -60, left: -40 }} aria-hidden />
+        <div className="deco-orb" style={{ width: 260, height: 260, background: '#C9B8A5', opacity: 0.28, bottom: -50, right: -30 }} aria-hidden />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
+          <div className="mb-6 flex items-center justify-center gap-2" aria-hidden>
+            <span className="h-px w-8 bg-gradient-to-r from-transparent to-primary/40" />
+            <span className="h-1.5 w-1.5 rotate-45 bg-accent" />
+            <span className="h-px w-8 bg-gradient-to-l from-transparent to-primary/40" />
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold leading-snug text-text-primary">
             テストでは、
-            <span className="text-primary">測れない</span>。
+            <span className="marker">測れない</span>。
           </h2>
           <p className="mt-8 text-lg text-text-secondary leading-relaxed">
             点数になる力の多くは、これからAIが担っていきます。でも——
@@ -129,7 +135,6 @@ export function LandingPage() {
           <p className="mt-8 text-lg text-text-secondary leading-relaxed">
             たとえばチームスポーツを続けた人が、自然と気が利くように。
             密かは、日々の記録からその力を見つけ、言葉にし、伸ばします。
-            見つけて伸ばすほど、人生はもっと豊かになる。
           </p>
         </div>
       </section>
@@ -138,17 +143,26 @@ export function LandingPage() {
       <section className="bg-surface border-y border-border">
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="text-center max-w-2xl mx-auto">
+            <p className="text-sm font-medium tracking-widest text-primary mb-3 before:content-[''] before:mr-3 before:inline-block before:h-px before:w-6 before:align-middle before:bg-primary">
+              見える化の仕組み
+            </p>
             <h2 className="text-2xl md:text-3xl font-bold text-text-primary text-balance">
-              日々の“活動”と“振り返り”が、定性的な価値になる。
+              メンバーのテキストから、“密かなスキル”を<span className="marker">見極める</span>。
             </h2>
+            <p className="mt-5 text-text-secondary leading-relaxed">
+              メンバーが書く「目標・活動・振り返り」から、AIが非認知能力（数字に表れない力）を推測して見える化。面談や評価では見えなかったメンバーの姿と強みを、マネージャーが見極められます。
+            </p>
           </div>
 
           {/* フロー */}
           <div className="mt-12 flex flex-wrap items-center justify-center gap-3 text-sm md:text-base">
-            {['目標を立てる', '活動を記録する', '振り返る', 'AIが伴走・言語化'].map(
+            {['目標を立てる', '活動を記録する', '振り返る', 'AIが非認知能力を推測'].map(
               (step, i, arr) => (
                 <div key={step} className="flex items-center gap-3">
-                  <span className="rounded-full border border-primary/40 bg-background px-4 py-2 font-medium text-primary">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-background px-4 py-2 font-medium text-primary">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                      {i + 1}
+                    </span>
                     {step}
                   </span>
                   {i < arr.length - 1 && (
@@ -164,26 +178,33 @@ export function LandingPage() {
           <div className="mt-12 grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
             {[
               {
-                title: '届く',
-                body: '現場の活動と思考が、経営・上司にそのまま見える。数字の裏側が初めて伝わる。',
+                title: '見える',
+                body: '現場の活動と思考が、経営・上司にそのまま見える。数字の裏側が、初めて伝わる。',
               },
               {
-                title: '続く',
-                body: 'AIが問いを投げ、振り返りを習慣化。記録が途切れず、変化が積み上がる。',
+                title: '見極める',
+                body: '数字に表れない非認知能力を、AIが推測。誰がどんな強みを持つのかを見極められる。',
               },
               {
-                title: '支える',
-                body: 'トレーナー（上司・人事）が状況を把握し、一人ひとりに的確に伴走できる。',
+                title: '自分も知る',
+                body: '本人もAIとの壁打ちで自己理解が深まり、伸ばすべき目標とスキルが見えてくる。',
               },
             ].map((item) => (
               <div
                 key={item.title}
-                className="rounded-xl border border-border bg-background p-6 text-center"
+                className="rounded-xl border border-border bg-background p-6 shadow-sm transition-shadow hover:shadow-md text-center"
               >
                 <h3 className="text-lg font-bold text-primary">{item.title}</h3>
                 <p className="mt-3 text-text-secondary leading-relaxed">{item.body}</p>
               </div>
             ))}
+          </div>
+          <div className="mt-12 text-center">
+            <Link href="/login">
+              <Button variant="primary" className="px-10 py-3 text-base">
+                無料で試す
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -191,11 +212,16 @@ export function LandingPage() {
       {/* ④-2 AI機能（実装に基づく） */}
       <section className="container mx-auto px-4 py-20 md:py-28">
         <div className="text-center max-w-2xl mx-auto">
-          <p className="text-sm font-medium tracking-widest text-primary mb-3">
+          <div className="mb-6 flex items-center justify-center gap-2" aria-hidden>
+            <span className="h-px w-8 bg-gradient-to-r from-transparent to-primary/40" />
+            <span className="h-1.5 w-1.5 rotate-45 bg-accent" />
+            <span className="h-px w-8 bg-gradient-to-l from-transparent to-primary/40" />
+          </div>
+          <p className="text-sm font-medium tracking-widest text-primary mb-3 before:content-[''] before:mr-3 before:inline-block before:h-px before:w-6 before:align-middle before:bg-primary">
             AIがやること
           </p>
           <h2 className="text-2xl md:text-3xl font-bold text-text-primary">
-            記録が、毎月“気づき”に変わる。
+            記録が、毎月<span className="marker">“気づき”</span>に変わる。
           </h2>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
@@ -203,7 +229,7 @@ export function LandingPage() {
             {
               title: 'AI月次診断',
               tag: '全プラン',
-              body: '毎月の活動記録と振り返りから、パーソナリティ特性・感情の傾向・その月の要約をAIが自動で生成します。',
+              body: '毎月の活動記録と振り返りから、非認知能力の傾向・パーソナリティ特性・その月の要約をAIが自動で生成します。',
             },
             {
               title: 'AI質問サジェスト',
@@ -218,7 +244,7 @@ export function LandingPage() {
           ].map((f) => (
             <div
               key={f.title}
-              className="rounded-2xl border border-border bg-surface p-7"
+              className="rounded-2xl border border-border bg-surface p-7 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-lg font-bold text-primary">{f.title}</h3>
@@ -236,11 +262,16 @@ export function LandingPage() {
       <section className="bg-surface border-y border-border">
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="text-center max-w-2xl mx-auto">
-            <p className="text-sm font-medium tracking-widest text-primary mb-3">
+            <div className="mb-6 flex items-center justify-center gap-2" aria-hidden>
+              <span className="h-px w-8 bg-gradient-to-r from-transparent to-primary/40" />
+              <span className="h-1.5 w-1.5 rotate-45 bg-accent" />
+              <span className="h-px w-8 bg-gradient-to-l from-transparent to-primary/40" />
+            </div>
+            <p className="text-sm font-medium tracking-widest text-primary mb-3 before:content-[''] before:mr-3 before:inline-block before:h-px before:w-6 before:align-middle before:bg-primary">
               体験から、自己理解を深める
             </p>
             <h2 className="text-2xl md:text-3xl font-bold text-text-primary">
-              やってみて、気づく。
+              やってみて、<span className="marker">気づく</span>。
             </h2>
             <p className="mt-5 text-text-secondary leading-relaxed">
               密かの取り組みは、机の上の研修ではありません。会議も、イベント準備も、スポーツも——
@@ -313,9 +344,16 @@ export function LandingPage() {
 
       {/* ⑤ 独自価値（定性評価 → 才能発見へ） */}
       <section className="relative overflow-hidden container mx-auto px-4 py-20 md:py-28">
+        <div className="deco-orb" style={{ width: 280, height: 280, background: '#C9B8A5', opacity: 0.26, top: -50, right: -40 }} aria-hidden />
+        <div className="deco-orb" style={{ width: 300, height: 300, background: '#8B9D83', opacity: 0.20, bottom: -60, left: -50 }} aria-hidden />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
+          <div className="mb-6 flex items-center justify-center gap-2" aria-hidden>
+            <span className="h-px w-8 bg-gradient-to-r from-transparent to-primary/40" />
+            <span className="h-1.5 w-1.5 rotate-45 bg-accent" />
+            <span className="h-px w-8 bg-gradient-to-l from-transparent to-primary/40" />
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold leading-snug text-text-primary text-balance">
-            定量では拾えなかった人が、ここで<span className="text-primary">見つかる</span>。
+            定量では拾えなかった人が、ここで<span className="marker">見つかる</span>。
           </h2>
           <p className="mt-8 text-lg text-text-secondary leading-relaxed">
             黙々と支える人、人一倍考える人、チームの空気をつくる人——
@@ -329,7 +367,7 @@ export function LandingPage() {
             が見えてくる。
           </p>
           <div className="mt-10 inline-flex flex-wrap justify-center gap-3">
-            {['公平な評価', '適材適所', 'キャリア面談の土台'].map((tag) => (
+            {['メンバー理解', '適材適所', 'キャリア面談の土台'].map((tag) => (
               <span
                 key={tag}
                 className="rounded-full bg-accent/30 px-5 py-2 text-sm font-medium text-text-primary"
@@ -341,9 +379,11 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ⑥ こんな経営者に */}
-      <section className="bg-primary text-white">
-        <div className="container mx-auto px-4 py-16 md:py-24 text-center">
+      {/* ⑥ こんな経営者に + 中間CTA */}
+      <section className="relative overflow-hidden bg-primary text-white">
+        <div className="deco-orb" style={{ width: 340, height: 340, background: '#FFFFFF', opacity: 0.1, top: -80, left: -40 }} aria-hidden />
+        <div className="deco-orb" style={{ width: 300, height: 300, background: '#C9B8A5', opacity: 0.18, bottom: -70, right: -30 }} aria-hidden />
+        <div className="relative z-10 container mx-auto px-4 py-16 md:py-24 text-center">
           <h2 className="text-2xl md:text-3xl font-bold">
             人を、数字だけで見たくない経営者へ。
           </h2>
@@ -352,44 +392,54 @@ export function LandingPage() {
             「人の温かさ・人らしさ」に投資したいと考えるあなたに、
             Hisokaは寄り添います。
           </p>
-        </div>
-      </section>
-
-      {/* ⑦ 2つの使い方 */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
-        <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
-          <div className="rounded-2xl border border-border bg-surface p-8">
-            <h3 className="text-xl font-bold text-primary">組織で使う</h3>
-            <p className="mt-4 text-text-secondary leading-relaxed">
-              トレーナー（上司・人事）×トレーニー（社員）で、
-              定量だけでなく定性まで見える育成を仕組み化。
-              現場のがんばりが、経営にちゃんと届く組織へ。
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border bg-surface p-8">
-            <h3 className="text-xl font-bold text-primary">個人で使う</h3>
-            <p className="mt-4 text-text-secondary leading-relaxed">
-              自分の活動と振り返りを積み重ねると、
-              AIが頑張りの中から得意を見つけてくれる。
-              自分らしい強みと、進むべき道が見えてくる。
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ⑧ 最後のCTA */}
-      <section className="relative overflow-hidden bg-surface border-t border-border">
-        <div className="relative z-10 container mx-auto px-4 py-20 text-center">
-          <h2 className="text-2xl md:text-4xl font-bold text-text-primary text-balance">
-            数字の向こうにいる“人”を、見にいこう。
-          </h2>
           <div className="mt-10">
-            <Link href="/login">
-              <Button variant="primary" className="px-10 py-3 text-base">
-                無料で始める
-              </Button>
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center rounded-lg bg-white px-10 py-3 text-base font-bold text-primary transition-colors hover:bg-white/90"
+            >
+              無料で始める
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* ⑦ 組織開発SaaSとしての位置づけ */}
+      <section className="container mx-auto px-4 py-16 md:py-24">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <div className="mb-6 flex items-center justify-center gap-2" aria-hidden>
+            <span className="h-px w-8 bg-gradient-to-r from-transparent to-primary/40" />
+            <span className="h-1.5 w-1.5 rotate-45 bg-accent" />
+            <span className="h-px w-8 bg-gradient-to-l from-transparent to-primary/40" />
+          </div>
+          <p className="text-sm font-medium tracking-widest text-primary mb-3 before:content-[''] before:mr-3 before:inline-block before:h-px before:w-6 before:align-middle before:bg-primary">
+            会社で使う、組織開発／人事SaaS
+          </p>
+          <h2 className="text-2xl md:text-3xl font-bold text-text-primary text-balance">
+            経営も、本人も。両方に効く。
+          </h2>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
+          <div className="rounded-2xl border border-border bg-surface p-8 shadow-sm transition-shadow hover:shadow-md">
+            <h3 className="text-xl font-bold text-primary">経営・マネージャー</h3>
+            <p className="mt-4 text-text-secondary leading-relaxed">
+              トレーナー（上司・人事）×メンバーで、定量だけでなく非認知まで見える育成を仕組み化。
+              数字に表れないメンバーの力を見極め、適材適所や育成・面談のヒントにつなげます。
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-surface p-8 shadow-sm transition-shadow hover:shadow-md">
+            <h3 className="text-xl font-bold text-primary">メンバー本人</h3>
+            <p className="mt-4 text-text-secondary leading-relaxed">
+              活動と振り返りを重ね、AIとの壁打ちで自己理解を深める。
+              自分の“密かなスキル”に気づき、どんな目標を持ち、何を伸ばすと良いかが見えてきます。
+            </p>
+          </div>
+        </div>
+        <div className="mt-12 text-center">
+          <Link href="/login">
+            <Button variant="primary" className="px-10 py-3 text-base">
+              無料で始める
+            </Button>
+          </Link>
         </div>
       </section>
 

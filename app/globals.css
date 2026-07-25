@@ -110,3 +110,21 @@ body {
   }
 }
 
+/* ============================================================
+   LP 装飾: やわらかい背景オーブ(ブランド配色・発光なし)
+   色/サイズ/位置/不透明度はインラインstyleで個別指定する
+   ============================================================ */
+.deco-orb {
+  position: absolute;
+  z-index: 0;
+  border-radius: 9999px;
+  filter: blur(58px);
+  pointer-events: none;
+}
+
+/* 見出しの一語に敷くやわらかいマーカー(アクセント色ハイライト) */
+.marker {
+  background-image: linear-gradient(transparent 62%, rgba(201, 184, 165, 0.45) 62%);
+  padding: 0 0.06em;
+}
+

@@ -1,26 +1,28 @@
-import { google } from '@ai-sdk/google';
 import { anthropic } from '@ai-sdk/anthropic';
-import { bedrock } from '@ai-sdk/amazon-bedrock';
 
+/**
+ * AI_MODEL からモデルを解決する。
+ * 2026-07 に Anthropic API 直結へ一本化（旧: Bedrock / Google は廃止）。
+ * 形式は "anthropic:<model-id>" または "<model-id>" のどちらでも可。
+ */
 export function getModel() {
-  const key = process.env.AI_MODEL || 'google:gemini-2.5-flash-lite';
-  const colonIndex = key.indexOf(':');
+  const raw = process.env.AI_MODEL || 'anthropic:claude-sonnet-4-6';
 
-  if (colonIndex === -1) {
-    throw new Error(`AI_MODEL の形式が不正です: "${key}" (期待: "provider:model-id")`);
+  let modelId = raw;
+  const colonIndex = raw.indexOf(':');
+  if (colonIndex !== -1) {
+    const provider = raw.slice(0, colonIndex);
+    if (provider !== 'anthropic') {
+      throw new Error(
+        `未対応のAIプロバイダ: "${provider}"。現在は Anthropic 直結のみ対応です（例: "anthropic:claude-sonnet-4-6"）`
+      );
+    }
+    modelId = raw.slice(colonIndex + 1);
   }
 
-  const provider = key.slice(0, colonIndex);
-  const modelId = key.slice(colonIndex + 1);
-
-  switch (provider) {
-    case 'google':
-      return google(modelId);
-    case 'anthropic':
-      return anthropic(modelId);
-    case 'bedrock':
-      return bedrock(modelId);
-    default:
-      throw new Error(`未対応のAIプロバイダ: "${provider}"`);
+  if (!modelId) {
+    throw new Error(`AI_MODEL の形式が不正です: "${raw}"`);
   }
+
+  return anthropic(modelId);
 }

@@ -1,3 +1,5 @@
+import type { SkillEvidence } from '@/lib/ai/skills-taxonomy';
+
 export type Role = 'trainee' | 'trainer' | 'admin';
 
 export type GoalStatus = 'in_progress' | 'achieved' | 'cancelled';
@@ -71,30 +73,6 @@ export interface MonthlyReflection {
 
 // --- AI機能 ---
 
-export type TraitKey =
-  | 'extraversion'
-  | 'agreeableness'
-  | 'conscientiousness'
-  | 'emotionality'
-  | 'openness'
-  | 'honesty_humility'
-  | 'curiosity';
-
-export interface TraitResult {
-  score: number;
-  level: 'HIGH' | 'LOW';
-}
-
-export const TRAIT_LABELS: Record<TraitKey, string> = {
-  extraversion: '外向性',
-  agreeableness: '協調性',
-  conscientiousness: '誠実性',
-  emotionality: '情緒性',
-  openness: '開放性',
-  honesty_humility: '誠実さ・謙虚さ',
-  curiosity: '好奇心',
-};
-
 export interface AiDiagnosis {
   id: string;
   user_id: string;
@@ -107,8 +85,8 @@ export interface AiDiagnosis {
   sentiment_positive_keywords: string[];
   sentiment_negative_keywords: string[];
   sentiment_trend: 'improving' | 'stable' | 'declining';
-  personality_raw_scores: Record<number, number>;
-  personality_traits: Record<TraitKey, TraitResult>;
+  /** 非認知能力の行動エビデンス（新エンジン）。旧データには無いため null 許容 */
+  skill_evidence: SkillEvidence[] | null;
   summary: string;
   source_text_length: number;
   analyzed_at: string;

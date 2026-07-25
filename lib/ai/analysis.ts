@@ -2,8 +2,8 @@ import { generateText, generateObject } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { getModel } from './model';
-import { PERSONALITY_PROMPT, SENTIMENT_PROMPT, SUMMARY_PROMPT, QUESTION_SUGGEST_PROMPT } from './prompts';
-import { parsePersonalityResponse, calcAllTraitScores } from './personality-parser';
+import { SENTIMENT_PROMPT, SUMMARY_PROMPT, QUESTION_SUGGEST_PROMPT } from './prompts';
+import { analyzeSkills, summarizeSkillEvidence } from './skills-analysis';
 import { MIN_TEXT_LENGTH } from './constants';
 
 function getAdminClient() {
@@ -93,20 +93,6 @@ async function analyzeSentiment(text: string) {
 }
 
 /**
- * パーソナリティ特性分析
- */
-async function analyzePersonality(text: string) {
-  const prompt = PERSONALITY_PROMPT.replace('{TEXT}', text);
-  const { text: responseText } = await generateText({
-    model: getModel(),
-    prompt,
-  });
-  const parsed = parsePersonalityResponse(responseText);
-  const traits = calcAllTraitScores(parsed.scores);
-  return { rawScores: parsed.scores, traits };
-}
-
-/**
  * 月次要約
  */
 async function generateSummary(text: string) {
@@ -139,18 +125,14 @@ async function generateQuestions(
   sentimentScore: number,
   positiveKeywords: string[],
   negativeKeywords: string[],
-  traits: Record<string, { score: number; level: string }>,
+  skillsSummary: string,
   summary: string,
 ) {
-  const traitsSummary = Object.entries(traits)
-    .map(([k, v]) => `${k}: ${v.score} (${v.level})`)
-    .join(', ');
-
   const prompt = QUESTION_SUGGEST_PROMPT
     .replace('{SENTIMENT_SCORE}', sentimentScore.toString())
     .replace('{POSITIVE_KEYWORDS}', positiveKeywords.join(', '))
     .replace('{NEGATIVE_KEYWORDS}', negativeKeywords.join(', '))
-    .replace('{TRAITS_SUMMARY}', traitsSummary)
+    .replace('{SKILLS_SUMMARY}', skillsSummary)
     .replace('{SUMMARY}', summary);
 
   const { object } = await generateObject({
@@ -213,9 +195,9 @@ async function analyzeTrainee(
   }
 
   // 3分析を並列実行
-  const [sentiment, personality, summary] = await Promise.all([
+  const [sentiment, skillEvidence, summary] = await Promise.all([
     analyzeSentiment(text),
-    analyzePersonality(text),
+    analyzeSkills(text),
     generateSummary(text),
   ]);
 
@@ -250,8 +232,7 @@ async function analyzeTrainee(
       sentiment_positive_keywords: sentiment.positive_keywords,
       sentiment_negative_keywords: sentiment.negative_keywords,
       sentiment_trend: trend,
-      personality_raw_scores: personality.rawScores,
-      personality_traits: personality.traits,
+      skill_evidence: skillEvidence,
       summary,
       source_text_length: text.length,
       analyzed_at: new Date().toISOString(),
@@ -271,7 +252,7 @@ async function analyzeTrainee(
     sentiment.score,
     sentiment.positive_keywords,
     sentiment.negative_keywords,
-    personality.traits,
+    summarizeSkillEvidence(skillEvidence),
     summary,
   );
 

@@ -3,9 +3,9 @@ import './globals.css';
 import { ServiceWorkerRegister } from '@/components/pwa/sw-register';
 
 export const metadata: Metadata = {
-  title: 'Hisoka - 数字に表れない、人の価値を経営に届ける',
+  title: 'Hisoka（密か） - メンバーの“密かな”非認知能力を見える化する組織開発SaaS',
   description:
-    'KPIの達成はAIがやる時代。数字に表れない現場のがんばりと人らしさ（定性）を、AIが伴走しながら可視化し、経営に届ける目標管理ツール。',
+    '数字に表れないメンバーの“密かな”がんばりと非認知能力を、AIが見える化。経営・マネージャーはメンバーを深く知り、本人も自分の強みに気づく。会社で使う組織開発／人事SaaS。',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

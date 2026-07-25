@@ -3,7 +3,8 @@ import { getTraineeDiagnosis, getQuestionSuggests } from '@/lib/actions/ai';
 import { MonthNavigator } from '@/components/features/ai/month-navigator';
 import { SummaryCard } from '@/components/features/ai/summary-card';
 import { SentimentSection } from '@/components/features/ai/sentiment-section-lazy';
-import { PersonalitySection } from '@/components/features/ai/personality-section-lazy';
+import { SkillEvidenceSection } from '@/components/features/ai/skill-evidence-section';
+import { SkillTrendSection } from '@/components/features/ai/skill-trend-section';
 import { QuestionSuggests } from '@/components/features/ai/question-suggests';
 import { Card } from '@/components/ui/card';
 import type { AiDiagnosis } from '@/types';
@@ -75,7 +76,8 @@ export default async function TrainerAiDetailPage({ params, searchParams }: Page
         <>
           <SummaryCard summary={diagnosis.summary} />
           <SentimentSection diagnosis={diagnosis} history={history} />
-          <PersonalitySection diagnosis={diagnosis} />
+          <SkillEvidenceSection diagnosis={diagnosis} />
+          <SkillTrendSection history={history} />
           {questionSuggestLocked ? (
             <Card>
               <p className="text-text-secondary text-center py-6 text-sm">

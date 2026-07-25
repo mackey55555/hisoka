@@ -3,7 +3,7 @@ import { getMyDiagnosis, getMyDiagnosisHistory } from '@/lib/actions/ai';
 import { MonthNavigator } from '@/components/features/ai/month-navigator';
 import { SummaryCard } from '@/components/features/ai/summary-card';
 import { SentimentSection } from '@/components/features/ai/sentiment-section-lazy';
-import { PersonalitySection } from '@/components/features/ai/personality-section-lazy';
+import { SkillEvidenceSection } from '@/components/features/ai/skill-evidence-section';
 import { Card } from '@/components/ui/card';
 
 interface PageProps {
@@ -36,7 +36,7 @@ export default async function AiDashboardPage({ params, searchParams }: PageProp
         <>
           <SummaryCard summary={diagnosis.summary} />
           <SentimentSection diagnosis={diagnosis} history={history || []} />
-          <PersonalitySection diagnosis={diagnosis} />
+          <SkillEvidenceSection diagnosis={diagnosis} />
         </>
       ) : (
         <Card>
