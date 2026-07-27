@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getGoals } from '@/lib/actions/goals';
-import { getMyDiagnosis } from '@/lib/actions/ai';
+import { getMyDiagnosis, getMySkillProfile } from '@/lib/actions/ai';
+import { MySkillCard } from '@/components/features/dashboard/my-skill-card';
 import { getMyMonthlyReflection } from '@/lib/actions/monthly-reflections';
 import { createClient } from '@/lib/supabase/server';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
@@ -70,6 +71,7 @@ export default async function DashboardPage({
     { data: pastReflections },
     diagnosisResult,
     monthlyReflectionResult,
+    skillProfileResult,
   ] = await Promise.all([
     goalIds.length > 0
       ? supabase
@@ -88,6 +90,7 @@ export default async function DashboardPage({
       .limit(15),
     getMyDiagnosis(slug, thisYear, thisMonth + 1),
     getMyMonthlyReflection(slug, thisYear, thisMonth + 1),
+    getMySkillProfile(slug),
   ]);
 
   const activities =
@@ -175,6 +178,8 @@ export default async function DashboardPage({
           </p>
         </Card>
       </div>
+
+      <MySkillCard teamSlug={slug} initial={skillProfileResult.data ?? null} />
 
       <StreakCard activityDates={activityDates} />
 

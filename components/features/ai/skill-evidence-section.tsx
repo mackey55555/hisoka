@@ -11,6 +11,10 @@ import {
 
 interface SkillEvidenceSectionProps {
   diagnosis: AiDiagnosis;
+  /** 見出し（既定: マネージャー/月次向け）。本人向けは「あなたの密かなスキル」等 */
+  title?: string;
+  /** 見出し下の説明文 */
+  intro?: string;
 }
 
 /** 段階ラベルと配色 */
@@ -24,16 +28,20 @@ const LEVEL_STYLE: Record<1 | 2 | 3, { label: string; cls: string }> = {
  * 非認知能力の「見える化」セクション。
  * 特性スコアの断定ではなく、行動エビデンス（引用）＋段階＋信頼度で示す。
  */
-export function SkillEvidenceSection({ diagnosis }: SkillEvidenceSectionProps) {
+export function SkillEvidenceSection({
+  diagnosis,
+  title = '見える化された非認知能力',
+  intro = '本人のテキストから読み取れた「行動の事実」をもとに、発揮された力を見える化しています。',
+}: SkillEvidenceSectionProps) {
   const evidence = diagnosis.skill_evidence;
 
   // 旧データ（skill_evidence 無し）へのフォールバック
   if (!evidence || evidence.length === 0) {
     return (
       <Card className="mb-6">
-        <h3 className="text-lg font-bold text-text-primary mb-2">見える化された非認知能力</h3>
+        <h3 className="text-lg font-bold text-text-primary mb-2">{title}</h3>
         <p className="text-sm text-text-secondary">
-          この月にはまだ非認知能力の分析データがありません。
+          まだ分析データがありません。
         </p>
       </Card>
     );
@@ -44,10 +52,8 @@ export function SkillEvidenceSection({ diagnosis }: SkillEvidenceSectionProps) {
 
   return (
     <Card className="mb-6">
-      <h3 className="text-lg font-bold text-text-primary mb-1">見える化された非認知能力</h3>
-      <p className="text-xs text-text-secondary mb-4">
-        本人のテキストから読み取れた「行動の事実」をもとに、発揮された力を見える化しています。
-      </p>
+      <h3 className="text-lg font-bold text-text-primary mb-1">{title}</h3>
+      <p className="text-xs text-text-secondary mb-4">{intro}</p>
 
       {assessedCount === 0 && (
         <p className="text-sm text-text-secondary mb-4">

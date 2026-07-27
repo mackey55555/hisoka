@@ -1,9 +1,29 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { AiDiagnosis, AiQuestionSuggest } from '@/types';
+import type { AiDiagnosis, AiQuestionSuggest, UserSkillProfile } from '@/types';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { getTeamPlanConfigById } from '@/lib/plan/team-plan';
+
+/**
+ * トレーニー: 自分の「密かなスキル」プロファイル（全期間）を取得
+ */
+export async function getMySkillProfile(teamSlug: string) {
+  const team = await resolveTeamFromSlug(teamSlug);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: '認証が必要です' };
+
+  const { data, error } = await supabase
+    .from('user_skill_profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('team_id', team.teamId)
+    .maybeSingle();
+
+  if (error) return { data: null, error: 'スキルプロファイルの取得に失敗しました' };
+  return { data: data as UserSkillProfile | null, error: null };
+}
 
 /**
  * トレーニー: 自分の月次診断を取得

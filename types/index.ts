@@ -111,3 +111,15 @@ export interface AiQuestionSuggest {
   created_at: string;
 }
 
+/** あなたの密かなスキル: 本人の全期間テキストから算出したスキルプロファイル */
+export interface UserSkillProfile {
+  id: string;
+  user_id: string;
+  team_id: string;
+  skill_evidence: SkillEvidence[];
+  source_text_length: number;
+  analyzed_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
