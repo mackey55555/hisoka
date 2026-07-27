@@ -31,8 +31,9 @@ export async function POST(request: Request) {
     return Response.json({ profile: result.profile });
   } catch (e) {
     console.error('my-skill-profile 生成エラー:', e);
+    // 【一時】原因特定のためエラー詳細を返す（確定後に汎用文言へ戻す）
     return Response.json(
-      { error: '分析中にエラーが発生しました。しばらくして再度お試しください。' },
+      { error: '分析エラー詳細: ' + String((e as any)?.message || e).slice(0, 300) },
       { status: 500 },
     );
   }
