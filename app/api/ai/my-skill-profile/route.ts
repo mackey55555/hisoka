@@ -2,8 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { generateAndStoreSkillProfile } from '@/lib/ai/skill-profile';
 
-// analyzeSkills（全期間・15スキル）は数十秒かかるため長めに確保
-export const maxDuration = 60;
+// analyzeSkills（全期間・15スキル）は数十秒かかる。Vercel Pro の上限まで確保して timeout を回避
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   const supabase = await createClient();
