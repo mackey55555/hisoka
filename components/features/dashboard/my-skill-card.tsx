@@ -27,12 +27,26 @@ export function MySkillCard({ teamSlug, initial }: MySkillCardProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teamSlug }),
       });
-      const body = await res.json();
-      if (!res.ok || body.error) {
-        setError(body.error || '分析に失敗しました。もう一度お試しください。');
+      // タイムアウト時などは JSON でない応答（504等）が返るため text で受ける
+      const raw = await res.text();
+      let body: { error?: string; profile?: UserSkillProfile } | null = null;
+      try {
+        body = raw ? JSON.parse(raw) : null;
+      } catch {
+        body = null;
+      }
+      if (!res.ok || body?.error) {
+        setError(
+          body?.error ||
+            `分析に失敗しました（HTTP ${res.status}）。時間がかかりすぎた可能性があります。`,
+        );
         return;
       }
-      setProfile(body.profile as UserSkillProfile);
+      if (!body?.profile) {
+        setError('分析結果を取得できませんでした。もう一度お試しください。');
+        return;
+      }
+      setProfile(body.profile);
       router.refresh();
     } catch {
       setError('分析に失敗しました。もう一度お試しください。');
