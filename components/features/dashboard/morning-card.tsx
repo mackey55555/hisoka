@@ -29,14 +29,14 @@ export function MorningCard({ diagnosis, pastReflection }: Props) {
       {diagnosis && (
         <Card>
           <div className="flex items-center gap-2 mb-3">
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-bold">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-sm font-bold">
               AI
             </span>
             <h3 className="text-base font-bold text-text-primary">
               今朝のあなたへ
             </h3>
           </div>
-          <p className="text-sm text-text-primary leading-relaxed">
+          <p className="text-base text-text-primary leading-relaxed">
             {summaryExcerpt(diagnosis.summary)}
           </p>
         </Card>
@@ -61,11 +61,11 @@ export function MorningCard({ diagnosis, pastReflection }: Props) {
             <h3 className="text-base font-bold text-text-primary">
               過去のあなたから
             </h3>
-            <span className="ml-auto text-xs text-text-secondary">
+            <span className="ml-auto text-sm text-text-secondary">
               {formatDate(pastReflection.created_at)}
             </span>
           </div>
-          <p className="text-sm text-text-primary leading-relaxed italic">
+          <p className="text-base text-text-primary leading-relaxed italic">
             「{reflectionExcerpt(pastReflection.content)}」
           </p>
         </Card>

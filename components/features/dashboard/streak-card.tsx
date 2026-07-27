@@ -128,16 +128,16 @@ export function StreakCard({ activityDates }: Props) {
               <span className="text-5xl font-bold text-text-primary leading-none tabular-nums">
                 {current}
               </span>
-              <span className="text-sm text-text-secondary">日連続</span>
+              <span className="text-base text-text-secondary">日連続</span>
             </div>
-            <p className="text-xs text-text-secondary mt-1">活動の連続記録</p>
+            <p className="text-sm text-text-secondary mt-1">活動の連続記録</p>
           </div>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="text-xs text-text-secondary">最長</p>
+          <p className="text-sm text-text-secondary">最長</p>
           <p className="text-lg font-bold text-text-primary tabular-nums leading-none mt-0.5">
             {longest}
-            <span className="text-xs text-text-secondary font-normal ml-0.5">日</span>
+            <span className="text-sm text-text-secondary font-normal ml-0.5">日</span>
           </p>
         </div>
       </div>
@@ -146,7 +146,7 @@ export function StreakCard({ activityDates }: Props) {
         {weekDays.map((day) => (
           <div key={day.date} className="flex flex-col items-center">
             <span
-              className={`text-xs mb-1.5 ${
+              className={`text-sm mb-1.5 ${
                 day.isToday ? 'text-primary font-bold' : 'text-text-secondary'
               }`}
             >
@@ -154,7 +154,7 @@ export function StreakCard({ activityDates }: Props) {
             </span>
             <div
               className={`
-                w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm transition-colors
+                w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base transition-colors
                 ${day.isToday ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface' : ''}
                 ${
                   day.done
@@ -188,7 +188,7 @@ export function StreakCard({ activityDates }: Props) {
         ))}
       </div>
 
-      <p className="text-sm text-text-secondary text-center">{message}</p>
+      <p className="text-base text-text-secondary text-center">{message}</p>
     </Card>
   );
 }

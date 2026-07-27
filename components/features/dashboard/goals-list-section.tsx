@@ -64,7 +64,7 @@ export function GoalsListSection({ goals, statsByGoalId = {} }: GoalsListSection
               <h3 className="text-base font-medium text-text-primary mb-2 break-words">
                 {goal.content}
               </h3>
-              <div className="flex items-center gap-x-3 gap-y-1 text-xs text-text-secondary flex-wrap">
+              <div className="flex items-center gap-x-3 gap-y-1 text-sm text-text-secondary flex-wrap">
                 <span
                   className={`px-2 py-0.5 rounded whitespace-nowrap ${
                     goal.status === 'achieved'
@@ -135,7 +135,7 @@ export function GoalsListSection({ goals, statsByGoalId = {} }: GoalsListSection
           {inProgress.map(renderGoal)}
           {others.length > 0 && inProgress.length > 0 && (
             <div className="pt-3 border-t border-border/60">
-              <p className="text-xs text-text-secondary mb-2">過去の目標</p>
+              <p className="text-sm text-text-secondary mb-2">過去の目標</p>
             </div>
           )}
           {others.map(renderGoal)}

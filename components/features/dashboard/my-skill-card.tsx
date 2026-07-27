@@ -60,10 +60,10 @@ export function MySkillCard({ teamSlug, initial }: MySkillCardProps) {
     return (
       <Card className="mb-6">
         <h3 className="text-lg font-bold text-text-primary mb-1">あなたの密かなスキル</h3>
-        <p className="text-sm text-text-secondary mb-4">
+        <p className="text-base text-text-secondary mb-4">
           これまで書いてきた目標・活動・振り返りから、数字に表れない“密かな”力をAIが見つけます。
         </p>
-        {error && <p className="text-sm text-error mb-3">{error}</p>}
+        {error && <p className="text-base text-error mb-3">{error}</p>}
         <Button variant="primary" onClick={run} disabled={loading}>
           {loading ? '分析中…（30秒ほどかかります）' : '密かなスキルを見つける'}
         </Button>
@@ -83,14 +83,14 @@ export function MySkillCard({ teamSlug, initial }: MySkillCardProps) {
         intro="これまでの記録から見えてきた、あなたの“密かな”力です。書き続けるほど、見える力も増えていきます。"
       />
       <div className="flex items-center justify-end gap-3 px-1 -mt-3">
-        {error && <span className="text-xs text-error">{error}</span>}
-        <span className="text-xs text-text-secondary">
+        {error && <span className="text-sm text-error">{error}</span>}
+        <span className="text-sm text-text-secondary">
           更新: {analyzed.toLocaleDateString('ja-JP')}
         </span>
         <button
           onClick={run}
           disabled={loading}
-          className="text-xs text-primary font-medium hover:underline disabled:opacity-50"
+          className="text-sm text-primary font-medium hover:underline disabled:opacity-50"
         >
           {loading ? '更新中…' : '最新の記録で更新する'}
         </button>

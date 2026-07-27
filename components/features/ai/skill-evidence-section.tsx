@@ -40,7 +40,7 @@ export function SkillEvidenceSection({
     return (
       <Card className="mb-6">
         <h3 className="text-lg font-bold text-text-primary mb-2">{title}</h3>
-        <p className="text-sm text-text-secondary">
+        <p className="text-base text-text-secondary">
           まだ分析データがありません。
         </p>
       </Card>
@@ -53,10 +53,10 @@ export function SkillEvidenceSection({
   return (
     <Card className="mb-6">
       <h3 className="text-lg font-bold text-text-primary mb-1">{title}</h3>
-      <p className="text-xs text-text-secondary mb-4">{intro}</p>
+      <p className="text-sm text-text-secondary mb-4">{intro}</p>
 
       {assessedCount === 0 && (
-        <p className="text-sm text-text-secondary mb-4">
+        <p className="text-base text-text-secondary mb-4">
           今月のテキストからは、まだ明確に見取れる行動が多くありませんでした。
         </p>
       )}
@@ -73,7 +73,7 @@ export function SkillEvidenceSection({
 
           return (
             <div key={domain.id}>
-              <h4 className="text-sm font-bold text-text-primary mb-2 pb-1 border-b border-[#EEE9E1]">
+              <h4 className="text-base font-bold text-text-primary mb-2 pb-1 border-b border-[#EEE9E1]">
                 {domain.name}
               </h4>
               <div className="space-y-3">
@@ -89,21 +89,21 @@ export function SkillEvidenceSection({
                       className="p-3 rounded-lg bg-background"
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-text-primary">
+                        <span className="text-base font-medium text-text-primary">
                           {skill?.displayName ?? e.skillId}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${style.cls}`}>
+                          <span className={`text-sm px-2 py-0.5 rounded-full font-medium ${style.cls}`}>
                             {style.label}
                           </span>
                           {lowConfidence && (
-                            <span className="text-[10px] text-text-secondary">根拠は控えめ</span>
+                            <span className="text-xs text-text-secondary">根拠は控えめ</span>
                           )}
                         </div>
                       </div>
 
                       {e.rationale && (
-                        <p className="text-xs text-text-secondary mb-2">{e.rationale}</p>
+                        <p className="text-sm text-text-secondary mb-2">{e.rationale}</p>
                       )}
 
                       {/* 根拠となった本人テキストの引用 */}
@@ -112,7 +112,7 @@ export function SkillEvidenceSection({
                           {e.quotes.map((q, i) => (
                             <li
                               key={i}
-                              className="text-xs text-text-primary pl-2 border-l-2 border-primary/40"
+                              className="text-sm text-text-primary pl-2 border-l-2 border-primary/40"
                             >
                               「{q}」
                             </li>
@@ -129,7 +129,7 @@ export function SkillEvidenceSection({
       </div>
 
       {/* 注意書き（推定であり評価確定ではない前提を明示） */}
-      <p className="text-xs text-text-secondary mt-4 p-3 bg-background rounded-lg">
+      <p className="text-sm text-text-secondary mt-4 p-3 bg-background rounded-lg">
         これはAIがテキストから推定した「見取り」であり、評価を確定するものではありません。
         本人・上司の対話のきっかけとしてお使いください。
       </p>

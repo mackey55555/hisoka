@@ -54,13 +54,13 @@ export function MonthlyReflectionCard({ teamSlug, year, month, initial }: Props)
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0">
             <h3 className="text-base font-bold text-text-primary">{heading}</h3>
-            <p className="text-xs text-text-secondary mt-0.5">
+            <p className="text-sm text-text-secondary mt-0.5">
               月に1回、全体を振り返る場所
             </p>
           </div>
           <Button
             variant="ghost"
-            className="text-sm flex-shrink-0"
+            className="text-base flex-shrink-0"
             onClick={() => {
               setError('');
               setOpen(true);
@@ -72,16 +72,16 @@ export function MonthlyReflectionCard({ teamSlug, year, month, initial }: Props)
 
         {initial ? (
           <>
-            <p className="text-sm text-text-primary whitespace-pre-wrap break-words">
+            <p className="text-base text-text-primary whitespace-pre-wrap break-words">
               {initial.content}
             </p>
-            <p className="mt-3 text-xs text-text-secondary">
+            <p className="mt-3 text-sm text-text-secondary">
               最終更新: {formatDateTime(initial.updated_at)}
             </p>
           </>
         ) : (
           <div className="py-6 text-center bg-background/60 rounded-lg">
-            <p className="text-sm text-text-secondary mb-3">
+            <p className="text-base text-text-secondary mb-3">
               今月の振り返りはまだありません
             </p>
             <Button
@@ -90,7 +90,7 @@ export function MonthlyReflectionCard({ teamSlug, year, month, initial }: Props)
                 setError('');
                 setOpen(true);
               }}
-              className="text-sm"
+              className="text-base"
             >
               書いてみる
             </Button>
@@ -114,7 +114,7 @@ export function MonthlyReflectionCard({ teamSlug, year, month, initial }: Props)
             placeholder={PLACEHOLDER}
             autoFocus
           />
-          {error && <div className="text-error text-sm">{error}</div>}
+          {error && <div className="text-error text-base">{error}</div>}
           <div className="flex gap-3">
             <Button type="submit" variant="primary" disabled={loading}>
               {loading ? '保存中...' : '保存'}

@@ -69,14 +69,14 @@ export function QuickActivityEntry({ teamSlug, goals }: Props) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
           <div className="flex-1">
-            <p className="text-sm font-bold text-text-primary mb-1">
+            <p className="text-base font-bold text-text-primary mb-1">
               まずは目標を作りましょう
             </p>
-            <p className="text-xs text-text-secondary mb-3">
+            <p className="text-sm text-text-secondary mb-3">
               目標があると、日々の活動が積み上がっていきます。
             </p>
             <Link href={`/t/${teamSlug}/goals/new`}>
-              <Button variant="primary" className="text-sm py-2 px-4">
+              <Button variant="primary" className="text-base py-2 px-4">
                 + 目標を作る
               </Button>
             </Link>
@@ -108,7 +108,7 @@ export function QuickActivityEntry({ teamSlug, goals }: Props) {
             <p className="text-base font-bold text-text-primary">
               今日の活動を記録
             </p>
-            <p className="text-xs text-text-secondary truncate">
+            <p className="text-sm text-text-secondary truncate">
               何をしましたか？ 1〜2行でもOK
             </p>
           </div>
@@ -130,7 +130,7 @@ export function QuickActivityEntry({ teamSlug, goals }: Props) {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-base font-medium text-text-primary mb-2">
               どの目標について？
             </label>
             <select
@@ -158,7 +158,7 @@ export function QuickActivityEntry({ teamSlug, goals }: Props) {
             autoFocus
           />
 
-          {error && <div className="text-error text-sm">{error}</div>}
+          {error && <div className="text-error text-base">{error}</div>}
 
           <div className="flex gap-3">
             <Button type="submit" variant="primary" disabled={loading || !goalId}>

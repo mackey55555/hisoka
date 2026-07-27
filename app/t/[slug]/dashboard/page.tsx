@@ -164,14 +164,14 @@ export default async function DashboardPage({
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <Card>
-          <p className="text-sm text-text-secondary mb-1">進行中の目標</p>
+          <p className="text-base text-text-secondary mb-1">進行中の目標</p>
           <p className="text-3xl font-bold text-primary tabular-nums leading-none">
             {inProgressCount}
             <span className="text-base text-text-secondary font-normal ml-1">件</span>
           </p>
         </Card>
         <Card>
-          <p className="text-sm text-text-secondary mb-1">今月の活動</p>
+          <p className="text-base text-text-secondary mb-1">今月の活動</p>
           <p className="text-3xl font-bold text-primary tabular-nums leading-none">
             {activityCountThisMonth}
             <span className="text-base text-text-secondary font-normal ml-1">件</span>
