@@ -652,6 +652,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title="目標を編集"
+        size="lg"
       >
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <Textarea
@@ -702,6 +703,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
         isOpen={isActivityModalOpen}
         onClose={() => setIsActivityModalOpen(false)}
         title="活動記録を追加"
+        size="lg"
       >
         <form onSubmit={handleActivitySubmit} className="space-y-4">
           <div className="p-3 bg-bg-secondary rounded-lg text-sm">
@@ -795,6 +797,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
           setSelectedActivity(null);
         }}
         title="活動記録を編集"
+        size="lg"
       >
         <form onSubmit={handleActivityEditSubmit} className="space-y-4">
           <Textarea
@@ -834,6 +837,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
           setSelectedReflection(null);
         }}
         title="振り返りを編集"
+        size="lg"
       >
         <form onSubmit={handleReflectionEditSubmit} className="space-y-4">
           {selectedActivityId && (

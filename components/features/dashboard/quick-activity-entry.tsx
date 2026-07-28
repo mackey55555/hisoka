@@ -127,6 +127,7 @@ export function QuickActivityEntry({ teamSlug, goals }: Props) {
         isOpen={open}
         onClose={() => setOpen(false)}
         title="今日の活動を記録"
+        size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

@@ -102,6 +102,7 @@ export function MonthlyReflectionCard({ teamSlug, year, month, initial }: Props)
         isOpen={open}
         onClose={() => setOpen(false)}
         title={initial ? `振り返りを編集（${year}年${month}月）` : `今月の振り返りを書く（${year}年${month}月）`}
+        size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Textarea
