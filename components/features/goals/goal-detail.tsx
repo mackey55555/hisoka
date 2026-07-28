@@ -742,6 +742,7 @@ export function GoalDetail({ goal, activities: initialActivities, initialReflect
           setShowAiChat(false);
         }}
         title="振り返りを追加"
+        size="lg"
       >
         <form onSubmit={handleReflectionSubmit} className="space-y-4">
           {selectedActivityId && (

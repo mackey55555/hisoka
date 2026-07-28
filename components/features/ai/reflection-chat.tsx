@@ -117,9 +117,9 @@ export function ReflectionChat({
   return (
     <div className="border border-border rounded-lg bg-background p-4 mt-3">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-primary">振り返りサポート</span>
+        <span className="text-base font-medium text-primary">振り返りサポート</span>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-text-secondary">{userTurnCount}/3ターン</span>
+          <span className="text-sm text-text-secondary">{userTurnCount}/3ターン</span>
           <button
             onClick={onClose}
             className="text-text-secondary hover:text-text-primary transition-colors"
@@ -132,15 +132,18 @@ export function ReflectionChat({
         </div>
       </div>
 
-      {/* メッセージ一覧 */}
-      <div ref={scrollRef} className="space-y-3 mb-3 max-h-60 overflow-y-auto">
+      {/* メッセージ一覧（この領域だけを独立スクロール） */}
+      <div
+        ref={scrollRef}
+        className="space-y-3 mb-3 max-h-[50vh] min-h-[10rem] overflow-y-auto overscroll-contain pr-1"
+      >
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`text-sm ${
+            className={`text-base leading-relaxed whitespace-pre-wrap break-words ${
               m.role === 'assistant'
                 ? 'text-text-primary bg-surface p-3 rounded-lg'
-                : 'text-text-primary bg-primary/5 p-3 rounded-lg ml-4'
+                : 'text-text-primary bg-primary/5 p-3 rounded-lg ml-6'
             }`}
           >
             {m.content || (
@@ -154,29 +157,35 @@ export function ReflectionChat({
         ))}
       </div>
 
-      {/* 入力エリア */}
+      {/* 入力エリア（textarea で広く・Enter送信 / Shift+Enter改行） */}
       {!isMaxTurns ? (
-        <div className="flex gap-2">
-          <input
+        <div className="flex gap-2 items-end">
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); handleSubmit(e); } }}
-            placeholder="回答を入力..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+            placeholder="回答を入力…（Enterで送信 / Shift+Enterで改行）"
             disabled={isLoading}
-            className="flex-1 px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            rows={3}
+            className="flex-1 px-3 py-2 text-base bg-surface border border-border rounded-lg resize-y focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
           />
           <Button
             type="button"
             variant="primary"
             disabled={isLoading || !input.trim()}
-            className="text-sm px-4"
+            className="text-base px-4 self-stretch"
             onClick={handleSubmit}
           >
             送信
           </Button>
         </div>
       ) : (
-        <p className="text-xs text-text-secondary text-center py-2">
+        <p className="text-sm text-text-secondary text-center py-2">
           対話が完了しました。上の内容を参考に振り返りを書いてみてください。
         </p>
       )}
