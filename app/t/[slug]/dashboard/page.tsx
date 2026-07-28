@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getGoals } from '@/lib/actions/goals';
 import { getMyDiagnosis, getMySkillProfile } from '@/lib/actions/ai';
-import { MySkillCard } from '@/components/features/dashboard/my-skill-card';
+import { MySkillSummaryCard } from '@/components/features/dashboard/my-skill-summary-card';
 import { getMyMonthlyReflection } from '@/lib/actions/monthly-reflections';
 import { createClient } from '@/lib/supabase/server';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
@@ -179,7 +179,7 @@ export default async function DashboardPage({
         </Card>
       </div>
 
-      <MySkillCard teamSlug={slug} initial={skillProfileResult.data ?? null} />
+      <MySkillSummaryCard teamSlug={slug} profile={skillProfileResult.data ?? null} />
 
       <StreakCard activityDates={activityDates} />
 

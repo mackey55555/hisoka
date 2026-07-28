@@ -85,6 +85,12 @@ export function Sidebar({ role, teamSlug, teams = [] }: SidebarProps) {
     </svg>
   );
 
+  const SparkleIcon = ({ isActive }: { isActive: boolean }) => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+    </svg>
+  );
+
   // メニュー1行は通常のリンク or 区切り線
   type IconComponent = ({ isActive }: { isActive: boolean }) => React.ReactNode;
   type MenuRow =
@@ -93,6 +99,7 @@ export function Sidebar({ role, teamSlug, teams = [] }: SidebarProps) {
 
   const traineeMenuItems: MenuRow[] = [
     { href: `${base}/dashboard`, label: 'ダッシュボード', icon: DashboardIcon },
+    { href: `${base}/skills`, label: '密かなスキル', icon: SparkleIcon },
     { href: `${base}/dashboard/ai`, label: 'AI診断', icon: AiIcon },
     { href: `${base}/goals`, label: '目標一覧', icon: ListIcon },
     { href: `${base}/goals/new`, label: '新規目標', icon: PlusIcon },
@@ -104,6 +111,7 @@ export function Sidebar({ role, teamSlug, teams = [] }: SidebarProps) {
   // 上に自分用、区切りの下に担当トレーニー機能を置く。
   const trainerMenuItems: MenuRow[] = [
     { href: `${base}/dashboard`, label: 'マイダッシュボード', icon: DashboardIcon },
+    { href: `${base}/skills`, label: '密かなスキル', icon: SparkleIcon },
     { href: `${base}/dashboard/ai`, label: 'AI診断', icon: AiIcon },
     { href: `${base}/goals`, label: '目標一覧', icon: ListIcon },
     { href: `${base}/goals/new`, label: '新規目標', icon: PlusIcon },
