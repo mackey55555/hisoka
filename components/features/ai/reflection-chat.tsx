@@ -132,10 +132,11 @@ export function ReflectionChat({
         </div>
       </div>
 
-      {/* メッセージ一覧（この領域だけを独立スクロール） */}
+      {/* メッセージ一覧: まずこの中でスクロール。端まで来たら親モーダルへスクロールを繋げる
+          （overscroll-auto）。背面へは親モーダル側の overscroll-contain＋ロックで漏れない。 */}
       <div
         ref={scrollRef}
-        className="space-y-3 mb-3 max-h-[50vh] min-h-[10rem] overflow-y-auto overscroll-contain pr-1"
+        className="space-y-3 mb-3 max-h-[50vh] min-h-[10rem] overflow-y-auto overscroll-auto pr-1"
       >
         {messages.map((m) => (
           <div
