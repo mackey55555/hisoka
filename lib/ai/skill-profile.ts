@@ -8,6 +8,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { analyzeSkills } from './skills-analysis';
 import { MIN_TEXT_LENGTH } from './constants';
+import { contentWindowStart } from '@/lib/plan/plans';
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -30,8 +31,9 @@ const MAX_TEXT_CHARS = 8000;
 async function collectAllText(
   admin: ReturnType<typeof getAdminClient>,
   userId: string,
+  sinceIso?: string,
 ): Promise<string> {
-  const { data } = await admin
+  let builder = admin
     .from('activities')
     .select(`
       content,
@@ -39,8 +41,10 @@ async function collectAllText(
       reflections ( content ),
       goals!inner ( id, content, user_id )
     `)
-    .eq('goals.user_id', userId)
-    .order('created_at', { ascending: false });
+    .eq('goals.user_id', userId);
+  // Free等は閲覧窓（当月）に限定。無制限プランは全期間。
+  if (sinceIso) builder = builder.gte('created_at', sinceIso);
+  const { data } = await builder.order('created_at', { ascending: false });
 
   if (!data) return '';
 
@@ -83,7 +87,14 @@ export async function generateAndStoreSkillProfile(
   teamId: string,
 ): Promise<GenerateProfileResult> {
   const admin = getAdminClient();
-  const text = await collectAllText(admin, userId);
+  // チームのプランで閲覧窓を決める（Free=当月のみ）
+  const { data: teamRow } = await admin
+    .from('teams')
+    .select('plan')
+    .eq('id', teamId)
+    .maybeSingle();
+  const windowStart = contentWindowStart((teamRow as any)?.plan);
+  const text = await collectAllText(admin, userId, windowStart?.toISOString());
 
   if (text.length < MIN_TEXT_LENGTH) {
     return { ok: false, reason: 'insufficient_text' };

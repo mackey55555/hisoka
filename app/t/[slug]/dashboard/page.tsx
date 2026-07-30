@@ -8,6 +8,8 @@ import { MySkillSummaryCard } from '@/components/features/dashboard/my-skill-sum
 import { getMyMonthlyReflection } from '@/lib/actions/monthly-reflections';
 import { createClient } from '@/lib/supabase/server';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
+import { getTeamPlanConfigById } from '@/lib/plan/team-plan';
+import { contentWindowStart } from '@/lib/plan/plans';
 import { formatYmd } from '@/lib/utils/helpers';
 import { ProgressCharts } from '@/components/features/dashboard/progress-charts-lazy';
 import { GoalsListSection } from '@/components/features/dashboard/goals-list-section';
@@ -66,6 +68,23 @@ export default async function DashboardPage({
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
+  // Free等は「当月のみ」表示。無制限プランは従来どおり6ヶ月。
+  const plan = await getTeamPlanConfigById(team.teamId);
+  const windowStart = contentWindowStart(plan.id);
+  const activitiesFrom = windowStart ?? sixMonthsAgo;
+
+  // 振り返り(MorningCard用): 制限プランは当月のみに絞る
+  let reflectionsBuilder = supabase
+    .from('reflections')
+    .select('id, activity_id, content, created_at, updated_at, activities!inner(goal_id, goals!inner(user_id))')
+    .eq('activities.goals.user_id', user.id);
+  if (windowStart) {
+    reflectionsBuilder = reflectionsBuilder.gte('created_at', windowStart.toISOString());
+  }
+  const reflectionsQuery = reflectionsBuilder
+    .order('created_at', { ascending: false })
+    .limit(15);
+
   const [
     { data: allActivities },
     { data: pastReflections },
@@ -78,16 +97,10 @@ export default async function DashboardPage({
           .from('activities')
           .select('id, goal_id, created_at')
           .in('goal_id', goalIds)
-          .gte('created_at', sixMonthsAgo.toISOString())
+          .gte('created_at', activitiesFrom.toISOString())
           .order('created_at', { ascending: false })
       : Promise.resolve({ data: [] as Array<{ id: string; goal_id: string; created_at: string }> }),
-    // MorningCardのピックアップ用。1件しか引かないので15件で十分
-    supabase
-      .from('reflections')
-      .select('id, activity_id, content, created_at, updated_at, activities!inner(goal_id, goals!inner(user_id))')
-      .eq('activities.goals.user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(15),
+    reflectionsQuery,
     getMyDiagnosis(slug, thisYear, thisMonth + 1),
     getMyMonthlyReflection(slug, thisYear, thisMonth + 1),
     getMySkillProfile(slug),

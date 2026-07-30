@@ -6,16 +6,25 @@ interface MonthNavigatorProps {
   year: number;
   month: number;
   basePath: string;
+  /** 閲覧可能な最古の年月（Free等）。これより前へは遷移できない。未指定=無制限 */
+  minYear?: number;
+  minMonth?: number;
 }
 
-export function MonthNavigator({ year, month, basePath }: MonthNavigatorProps) {
+export function MonthNavigator({ year, month, basePath, minYear, minMonth }: MonthNavigatorProps) {
   const router = useRouter();
+
+  // 最古月に到達しているか（前月ボタンを無効化）
+  const atMin =
+    minYear != null && minMonth != null &&
+    year <= minYear && (year < minYear || month <= minMonth);
 
   const navigate = (y: number, m: number) => {
     router.push(`${basePath}?year=${y}&month=${m}`);
   };
 
   const handlePrev = () => {
+    if (atMin) return;
     if (month === 1) {
       navigate(year - 1, 12);
     } else {
@@ -47,7 +56,10 @@ export function MonthNavigator({ year, month, basePath }: MonthNavigatorProps) {
     <div className="flex items-center justify-center gap-4 mb-6">
       <button
         onClick={handlePrev}
-        className="p-2 rounded-lg hover:bg-background transition-colors text-text-primary"
+        disabled={atMin}
+        className={`p-2 rounded-lg transition-colors ${
+          atMin ? 'text-border cursor-not-allowed' : 'hover:bg-background text-text-primary'
+        }`}
         aria-label="前月"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

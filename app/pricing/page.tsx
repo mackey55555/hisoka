@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
-import { PLANS, PLAN_ORDER, type PlanConfig } from '@/lib/plan/plans';
+import { PLANS, PLAN_ORDER, historyLabel, type PlanConfig } from '@/lib/plan/plans';
 import { PlanInquiryForm } from '@/components/marketing/plan-inquiry-form';
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ function featureRows(c: PlanConfig): { label: string; value: React.ReactNode }[]
   return [
     { label: '月額（税込・チーム単位）', value: <span className="font-bold text-text-primary">¥{c.priceJpy.toLocaleString()}</span> },
     { label: 'メンバー上限', value: `${c.maxMembers}名` },
-    { label: '過去データ閲覧', value: c.historyWindowDays == null ? '無制限' : `過去${Math.round(c.historyWindowDays / 365)}年` },
+    { label: '過去データ閲覧', value: historyLabel(c.id) },
     { label: '目標・活動・振り返り（コア）', value: c.features.core ? yes() : no() },
     { label: '通知（Push）', value: c.features.notifications ? yes() : no() },
     { label: 'AI月次診断', value: c.features.monthlyDiagnosis ? yes() : no() },

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { getAdminClient } from '@/lib/supabase/admin';
-import { getPlanConfig, PLANS, PLAN_ORDER, type PlanId } from '@/lib/plan/plans';
+import { getPlanConfig, PLANS, PLAN_ORDER, historyLabel, type PlanId } from '@/lib/plan/plans';
 import { Card } from '@/components/ui/card';
 import { PlanCheckoutButton, ManagePortalButton } from './billing-actions';
 
@@ -18,7 +18,7 @@ function featureLines(plan: PlanId): string[] {
   const c = PLANS[plan];
   const lines = [
     `メンバー ${c.maxMembers} 名まで`,
-    c.historyWindowDays == null ? '過去データ 無制限' : `過去データ ${Math.round(c.historyWindowDays / 365)}年`,
+    `過去データ ${historyLabel(plan)}`,
     'AI月次診断',
     c.features.questionSuggest ? 'AI質問サジェスト' : null,
     c.features.reflectionSupport ? 'AI振り返りサポート' : null,

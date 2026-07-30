@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { getTraineeDiagnosis, getQuestionSuggests } from '@/lib/actions/ai';
+import { getTeamPlanConfigBySlug } from '@/lib/plan/team-plan';
+import { diagnosisMinMonth } from '@/lib/plan/plans';
 import { MonthNavigator } from '@/components/features/ai/month-navigator';
+import { HistoryLimitNotice } from '@/components/features/plan/history-limit-notice';
 import { SummaryCard } from '@/components/features/ai/summary-card';
 import { SentimentSection } from '@/components/features/ai/sentiment-section-lazy';
 import { SkillEvidenceSection } from '@/components/features/ai/skill-evidence-section';
@@ -34,6 +37,10 @@ export default async function TrainerAiDetailPage({ params, searchParams }: Page
   const now = new Date();
   const year = sp.year ? parseInt(sp.year) : now.getFullYear();
   const month = sp.month ? parseInt(sp.month) : now.getMonth() + 1;
+
+  const plan = await getTeamPlanConfigBySlug(slug);
+  const min = diagnosisMinMonth(plan?.id);
+  const outOfWindow = !!min && (year < min.year || (year === min.year && month < min.month));
 
   const { data: diagnosis } = await getTraineeDiagnosis(slug, traineeId, year, month);
 
@@ -70,9 +77,13 @@ export default async function TrainerAiDetailPage({ params, searchParams }: Page
         year={year}
         month={month}
         basePath={`/t/${slug}/trainer/trainees/${traineeId}/ai`}
+        minYear={min?.year}
+        minMonth={min?.month}
       />
 
-      {diagnosis ? (
+      {outOfWindow ? (
+        <HistoryLimitNotice teamSlug={slug} kind="diagnosis" />
+      ) : diagnosis ? (
         <>
           <SummaryCard summary={diagnosis.summary} />
           <SentimentSection diagnosis={diagnosis} history={history} />

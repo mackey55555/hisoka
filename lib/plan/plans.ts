@@ -33,8 +33,6 @@ export interface PlanConfig {
   priceJpy: number;
   /** メンバー上限(teams.max_members の正となる値) */
   maxMembers: number;
-  /** 過去データ閲覧可能期間(日)。null = 無制限。 */
-  historyWindowDays: number | null;
   features: PlanFeatures;
 }
 
@@ -44,13 +42,13 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     label: 'Free',
     priceJpy: 0,
     maxMembers: 2,
-    historyWindowDays: 365, // 過去1年まで
+    // 閲覧範囲は限定: コンテンツ=当月のみ / AI診断=当月+前月（窓は下部ヘルパー参照）
     features: {
       core: true,
       notifications: true,
-      monthlyDiagnosis: true, // Free でも無制限
-      questionSuggest: false,
-      reflectionSupport: false,
+      monthlyDiagnosis: true,
+      questionSuggest: true, // お試しのため Starter 同等に開放
+      reflectionSupport: true, // 同上
       export: false,
     },
   },
@@ -59,7 +57,6 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     label: 'Starter',
     priceJpy: 10000,
     maxMembers: 5,
-    historyWindowDays: null, // 無制限
     features: {
       core: true,
       notifications: true,
@@ -74,7 +71,6 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     label: 'Pro',
     priceJpy: 50000,
     maxMembers: 30,
-    historyWindowDays: null,
     features: {
       core: true,
       notifications: true,
@@ -105,13 +101,47 @@ export function maxMembersFor(plan: string | null | undefined): number {
   return getPlanConfig(plan).maxMembers;
 }
 
-/** 過去データ閲覧の下限日時(この日時以降のみ閲覧可)。無制限なら null。 */
-export function historyWindowStart(plan: string | null | undefined): Date | null {
-  const days = getPlanConfig(plan).historyWindowDays;
-  if (days == null) return null;
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d;
+/**
+ * 閲覧履歴が制限されるプランか（現状 Free のみ）。
+ * Free: コンテンツ=当月のみ / AI診断=当月+前月。Starter/Pro=無制限。
+ */
+export function isHistoryLimited(plan: string | null | undefined): boolean {
+  return getPlanConfig(plan).id === 'free';
+}
+
+/** UTC で「現在から offset ヶ月」の月初(1日 00:00:00Z)を返す。analysis バッチの月境界と一致。 */
+function startOfMonthUTC(offset: number): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
+}
+
+/**
+ * コンテンツ(活動/振り返り等)の閲覧下限。制限プランは「当月1日」、無制限は null。
+ * これより古い created_at は表示しない（月を跨ぐと前月分は見えなくなる）。
+ */
+export function contentWindowStart(plan: string | null | undefined): Date | null {
+  return isHistoryLimited(plan) ? startOfMonthUTC(0) : null;
+}
+
+/**
+ * AI月次診断の閲覧下限。制限プランは「前月1日」(=当月+前月)、無制限は null。
+ */
+export function diagnosisWindowStart(plan: string | null | undefined): Date | null {
+  return isHistoryLimited(plan) ? startOfMonthUTC(-1) : null;
+}
+
+/** AI診断で閲覧可能な最古の年月(1-based month)。無制限なら null。 */
+export function diagnosisMinMonth(
+  plan: string | null | undefined
+): { year: number; month: number } | null {
+  const d = diagnosisWindowStart(plan);
+  if (!d) return null;
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 };
+}
+
+/** 料金/請求画面などの「過去データ閲覧」表示ラベル。 */
+export function historyLabel(plan: string | null | undefined): string {
+  return isHistoryLimited(plan) ? '当月のみ（AI診断は前月まで）' : '無制限';
 }
 
 export function canExport(plan: string | null | undefined): boolean {

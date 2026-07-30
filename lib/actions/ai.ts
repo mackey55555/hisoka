@@ -4,6 +4,16 @@ import { createClient } from '@/lib/supabase/server';
 import type { AiDiagnosis, AiQuestionSuggest, UserSkillProfile } from '@/types';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { getTeamPlanConfigById } from '@/lib/plan/team-plan';
+import { diagnosisMinMonth } from '@/lib/plan/plans';
+
+/** (year,month) がプランの診断閲覧窓(最古 min)以降か。min=null は無制限。 */
+function inDiagnosisWindow(
+  year: number,
+  month: number,
+  min: { year: number; month: number } | null
+): boolean {
+  return !min || year > min.year || (year === min.year && month >= min.month);
+}
 
 /**
  * トレーニー: 自分の「密かなスキル」プロファイル（全期間）を取得
@@ -33,6 +43,10 @@ export async function getMyDiagnosis(teamSlug: string, year: number, month: numb
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: '認証が必要です' };
+
+  // 閲覧窓外（Free: 当月+前月より古い）は非表示
+  const min = diagnosisMinMonth((await getTeamPlanConfigById(team.teamId)).id);
+  if (!inDiagnosisWindow(year, month, min)) return { data: null, error: null };
 
   const { data, error } = await supabase
     .from('ai_diagnoses')
@@ -86,7 +100,12 @@ export async function getMyDiagnosisHistory(teamSlug: string, months: number = 6
     .order('month', { ascending: true });
 
   if (error) return { data: null, error: '診断履歴の取得に失敗しました' };
-  return { data: (data || []) as AiDiagnosis[], error: null };
+  // 閲覧窓外（Free: 当月+前月より古い）を除外
+  const min = diagnosisMinMonth((await getTeamPlanConfigById(team.teamId)).id);
+  const rows = ((data || []) as AiDiagnosis[]).filter((d) =>
+    inDiagnosisWindow(d.year, d.month, min)
+  );
+  return { data: rows, error: null };
 }
 
 /**
@@ -102,6 +121,10 @@ export async function getTraineeDiagnosis(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: '認証が必要です' };
+
+  // 閲覧窓外（Free: 当月+前月より古い）は非表示（チームのプラン基準）
+  const min = diagnosisMinMonth((await getTeamPlanConfigById(team.teamId)).id);
+  if (!inDiagnosisWindow(year, month, min)) return { data: null, error: null };
 
   const { data, error } = await supabase
     .from('ai_diagnoses')
@@ -147,8 +170,11 @@ export async function getAllTraineesLatestDiagnosis(teamSlug: string) {
     .order('year', { ascending: false })
     .order('month', { ascending: false });
 
+  // 閲覧窓外（Free: 当月+前月より古い）は「最新」候補から除外
+  const min = diagnosisMinMonth((await getTeamPlanConfigById(team.teamId)).id);
   const latestByUser = new Map<string, AiDiagnosis>();
   for (const d of (diagnoses || []) as AiDiagnosis[]) {
+    if (!inDiagnosisWindow(d.year, d.month, min)) continue;
     if (!latestByUser.has(d.user_id)) {
       latestByUser.set(d.user_id, d);
     }

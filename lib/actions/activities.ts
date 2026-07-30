@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { resolveTeamFromSlug } from '@/lib/context/current-team';
+import { getTeamPlanConfigById } from '@/lib/plan/team-plan';
+import { contentWindowStart } from '@/lib/plan/plans';
 
 const activitySchema = z.object({
   goal_id: z.string().min(1, '目標を選択してください'),
@@ -127,12 +129,16 @@ export async function getActivitiesByGoalId(teamSlug: string, goalId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: '認証が必要です' };
 
-  const { data, error } = await supabase
+  // Free等は「当月のみ」表示（無制限プランは全期間）
+  const windowStart = contentWindowStart((await getTeamPlanConfigById(team.teamId)).id);
+  let builder = supabase
     .from('activities')
     .select('*')
     .eq('goal_id', goalId)
-    .eq('team_id', team.teamId)
-    .order('created_at', { ascending: false });
+    .eq('team_id', team.teamId);
+  if (windowStart) builder = builder.gte('created_at', windowStart.toISOString());
+
+  const { data, error } = await builder.order('created_at', { ascending: false });
 
   if (error) return { data: null, error: '活動記録の取得に失敗しました' };
   return { data, error: null };
