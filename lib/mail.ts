@@ -187,7 +187,7 @@ export async function sendPlanInquiryEmail(
 ): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
-  const notifyTo = process.env.INQUIRY_NOTIFY_TO?.trim() || 'naoyuki@dinovator.net';
+  const notifyTo = process.env.INQUIRY_NOTIFY_TO?.trim() || 'naoyuki@tsukuru-ai.com';
   const devRedirectTo = process.env.MAIL_DEV_REDIRECT_TO?.trim();
   const isProd = process.env.VERCEL_ENV === 'production';
 
