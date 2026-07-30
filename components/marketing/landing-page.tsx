@@ -36,11 +36,19 @@ export function LandingPage() {
           <Link href="/" className="text-xl font-bold tracking-wide text-text-primary">
             Hisoka
           </Link>
-          <Link href="/login">
-            <Button variant="primary" className="px-5 py-2 text-sm">
-              ログイン
-            </Button>
-          </Link>
+          <div className="flex items-center gap-4 sm:gap-5">
+            <Link
+              href="/pricing"
+              className="text-sm font-medium text-text-primary hover:text-primary transition-colors"
+            >
+              料金プラン
+            </Link>
+            <Link href="/login">
+              <Button variant="primary" className="px-5 py-2 text-sm">
+                ログイン
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* コピー(左上寄せ) */}

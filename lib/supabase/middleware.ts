@@ -4,6 +4,7 @@ import { Database } from './database.types';
 
 const PUBLIC_PATHS = [
   '/login',
+  '/pricing',
   '/auth/callback',
   '/auth/set-password',
   '/auth/signout',

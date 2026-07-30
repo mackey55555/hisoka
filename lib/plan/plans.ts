@@ -14,7 +14,7 @@ export type PlanId = 'free' | 'starter' | 'pro';
 export interface PlanFeatures {
   /** 目標/活動/振り返り/ダッシュボード(全プラン共通のコア) */
   core: boolean;
-  /** Push / メール通知 */
+  /** Push 通知（毎晩のリマインダー等）。メール通知機能は未実装 */
   notifications: boolean;
   /** AI 月次診断(パーソナリティ特性分析) */
   monthlyDiagnosis: boolean;
@@ -43,7 +43,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     id: 'free',
     label: 'Free',
     priceJpy: 0,
-    maxMembers: 5,
+    maxMembers: 2,
     historyWindowDays: 365, // 過去1年まで
     features: {
       core: true,
@@ -57,8 +57,8 @@ export const PLANS: Record<PlanId, PlanConfig> = {
   starter: {
     id: 'starter',
     label: 'Starter',
-    priceJpy: 30000,
-    maxMembers: 20,
+    priceJpy: 10000,
+    maxMembers: 5,
     historyWindowDays: null, // 無制限
     features: {
       core: true,
@@ -73,7 +73,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     id: 'pro',
     label: 'Pro',
     priceJpy: 50000,
-    maxMembers: 50,
+    maxMembers: 30,
     historyWindowDays: null,
     features: {
       core: true,

@@ -168,6 +168,77 @@ ${p.acceptUrl}
 `;
 }
 
+interface PlanInquiryEmailParams {
+  planLabel: string;
+  company: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  memberCount?: number;
+  message?: string;
+}
+
+/**
+ * プラン申し込み/問い合わせを運営へ通知する。
+ * 宛先は INQUIRY_NOTIFY_TO（未設定なら運営の既定アドレス）。
+ */
+export async function sendPlanInquiryEmail(
+  params: PlanInquiryEmailParams
+): Promise<SendResult> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.MAIL_FROM;
+  const notifyTo = process.env.INQUIRY_NOTIFY_TO?.trim() || 'naoyuki@dinovator.net';
+  const devRedirectTo = process.env.MAIL_DEV_REDIRECT_TO?.trim();
+  const isProd = process.env.VERCEL_ENV === 'production';
+
+  if (!apiKey) return { sent: false, error: 'RESEND_API_KEY が未設定です' };
+  if (!from) return { sent: false, error: 'MAIL_FROM が未設定です' };
+  // 非本番では DEV リダイレクト先が必須（誤爆防止）
+  if (!isProd && !devRedirectTo) {
+    return { sent: false, error: '非本番環境では MAIL_DEV_REDIRECT_TO を設定してください' };
+  }
+
+  const actualTo = !isProd && devRedirectTo ? devRedirectTo : notifyTo;
+
+  const rows: Array<[string, string]> = [
+    ['希望プラン', params.planLabel],
+    ['会社/団体名', params.company],
+    ['担当者名', params.contactName],
+    ['メール', params.email],
+    ['電話', params.phone || '—'],
+    ['想定人数', params.memberCount != null ? `${params.memberCount}名` : '—'],
+    ['メッセージ', params.message || '—'],
+  ];
+
+  const html = `<!DOCTYPE html><html lang="ja"><body style="font-family:-apple-system,'Hiragino Sans',sans-serif;color:#1f2937;line-height:1.6;">
+    <div style="max-width:560px;margin:0 auto;padding:24px;">
+      <h1 style="font-size:18px;margin:0 0 16px;">Hisoka プラン申し込み</h1>
+      <table style="border-collapse:collapse;width:100%;font-size:14px;">
+        ${rows
+          .map(
+            ([k, v]) =>
+              `<tr><th style="text-align:left;padding:8px 12px;background:#f5f5f5;white-space:nowrap;vertical-align:top;">${escapeHtml(k)}</th><td style="padding:8px 12px;border-bottom:1px solid #eee;white-space:pre-wrap;">${escapeHtml(v)}</td></tr>`
+          )
+          .join('')}
+      </table>
+    </div></body></html>`;
+
+  const text = `Hisoka プラン申し込み\n\n${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n`;
+
+  const resend = new Resend(apiKey);
+  const { data, error } = await resend.emails.send({
+    from,
+    to: actualTo,
+    replyTo: params.email,
+    subject: `【Hisoka】プラン申し込み: ${params.company}（${params.planLabel}）`,
+    html,
+    text,
+  });
+
+  if (error) return { sent: false, error: error.message ?? String(error) };
+  return { sent: true, redirectedTo: actualTo !== notifyTo ? actualTo : undefined, messageId: data?.id };
+}
+
 export function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
