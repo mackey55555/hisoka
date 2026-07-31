@@ -131,7 +131,8 @@ export async function updateSession(request: NextRequest) {
   let slugs: string[];
   let isSuperAdmin: boolean;
   const cached = readSessionCache(request, user.id);
-  if (cached) {
+  // 空slugs(非SuperAdmin)のキャッシュは信用せず再クエリ（ループ防止・古いCookie救済）
+  if (cached && (cached.slugs.length > 0 || cached.isSuperAdmin)) {
     slugs = cached.slugs;
     isSuperAdmin = cached.isSuperAdmin;
   } else {
@@ -153,7 +154,13 @@ export async function updateSession(request: NextRequest) {
       .maybeSingle();
     isSuperAdmin = Boolean((meRow as any)?.is_super_admin);
 
-    writeSessionCache(supabaseResponse, user.id, slugs, isSuperAdmin);
+    // 空slugs(かつ非SuperAdmin)はキャッシュしない。
+    // 招待受諾直後などに古い空slugsが5分残ると、membershipがactive化しても
+    // ミドルウェアが /no-team へ、ページは最新を見て /dashboard へ、で
+    // 無限リダイレクト(ERR_TOO_MANY_REDIRECTS)になるため。
+    if (slugs.length > 0 || isSuperAdmin) {
+      writeSessionCache(supabaseResponse, user.id, slugs, isSuperAdmin);
+    }
   }
 
   // /super-admin/* は SuperAdmin のみ
