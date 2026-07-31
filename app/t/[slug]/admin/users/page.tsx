@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -176,7 +177,14 @@ export default function UsersPage() {
             {paginatedUsers.length > 0 ? (
               paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell>{user.name}</TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/t/${slug}/admin/users/${user.id}`}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      {user.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{formatDateTime(user.created_at)}</TableCell>
                   <TableCell>
