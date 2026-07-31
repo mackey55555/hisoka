@@ -105,7 +105,7 @@ export default function PricingPage() {
                   </p>
                   {c.id === 'free' && (
                     <p className="mt-1 text-xs text-text-secondary leading-relaxed">
-                      ※お試し用に閲覧期間を制限しています（データは保持され、上位プランで全期間ご覧いただけます）。
+                      ※お試し用に閲覧期間を制限しています（データは保持され、上位プランへ移行することで全期間ご覧いただけます）。
                     </p>
                   )}
                 </div>
