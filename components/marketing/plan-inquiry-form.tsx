@@ -1,17 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { submitPlanInquiry } from '@/lib/actions/inquiries';
 import { PLANS, PLAN_ORDER } from '@/lib/plan/plans';
 
 type InquiryPlan = 'free' | 'starter' | 'pro' | 'enterprise';
 
+const VALID_PLANS: InquiryPlan[] = ['free', 'starter', 'pro', 'enterprise'];
+
 export function PlanInquiryForm() {
   const [plan, setPlan] = useState<InquiryPlan>('starter');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  // 各プランカードの「このプランで申し込む」から希望プランを受け取る
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as InquiryPlan;
+      if (VALID_PLANS.includes(detail)) setPlan(detail);
+    };
+    window.addEventListener('hisoka:select-plan', handler);
+    return () => window.removeEventListener('hisoka:select-plan', handler);
+  }, []);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

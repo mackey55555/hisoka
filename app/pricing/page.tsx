@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { PLANS, PLAN_ORDER, historyLabel, type PlanConfig } from '@/lib/plan/plans';
 import { PlanInquiryForm } from '@/components/marketing/plan-inquiry-form';
+import { ApplyCtaButton } from '@/components/marketing/apply-cta-button';
 
 export const metadata: Metadata = {
   title: '料金プラン - Hisoka（密か）',
@@ -81,7 +82,22 @@ export default function PricingPage() {
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">メンバー最大 {c.maxMembers}名</p>
 
-                <ul className="mt-6 space-y-2.5 flex-1">
+                {/* 閲覧できる期間（Free=制限あり / Starter・Pro=無制限） */}
+                <div className="mt-3 rounded-lg bg-background px-3 py-2">
+                  <p className="text-sm">
+                    <span className="text-text-secondary">閲覧できる期間：</span>
+                    <span className={`font-medium ${c.id === 'free' ? 'text-warning' : 'text-primary'}`}>
+                      {historyLabel(c.id)}
+                    </span>
+                  </p>
+                  {c.id === 'free' && (
+                    <p className="mt-1 text-xs text-text-secondary leading-relaxed">
+                      ※お試し用に閲覧期間を制限しています（データは保持され、上位プランで全期間ご覧いただけます）。
+                    </p>
+                  )}
+                </div>
+
+                <ul className="mt-5 space-y-2.5 flex-1">
                   {featureRows(c).slice(3).map((r) => (
                     <li key={r.label} className="flex items-center justify-between gap-2 text-base">
                       <span className="text-text-secondary">{r.label}</span>
@@ -90,14 +106,9 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
-                <Link href="#apply" className="mt-7 block">
-                  <Button
-                    variant={featured ? 'primary' : 'secondary'}
-                    className="w-full py-3 text-base"
-                  >
-                    このプランで申し込む
-                  </Button>
-                </Link>
+                <div className="mt-7">
+                  <ApplyCtaButton plan={id} variant={featured ? 'primary' : 'secondary'} />
+                </div>
               </div>
             );
           })}
@@ -113,11 +124,14 @@ export default function PricingPage() {
               人数や運用に合わせて個別にご案内します。まずはお気軽にお問い合わせください。
             </p>
           </div>
-          <Link href="#apply" className="shrink-0">
-            <Button variant="secondary" className="px-8 py-3 text-base w-full md:w-auto">
-              お問い合わせ
-            </Button>
-          </Link>
+          <div className="shrink-0 w-full md:w-auto">
+            <ApplyCtaButton
+              plan="enterprise"
+              variant="secondary"
+              label="お問い合わせ"
+              className="px-8 py-3 text-base w-full md:w-auto"
+            />
+          </div>
         </div>
       </section>
 
