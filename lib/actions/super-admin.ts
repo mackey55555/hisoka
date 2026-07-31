@@ -376,3 +376,47 @@ function resolveSiteUrl(): string {
     'http://localhost:3000';
   return raw.startsWith('http') ? raw : `https://${raw}`;
 }
+
+/* ============================================================
+ *  プラン申し込み(plan_inquiries)の管理（SuperAdmin）
+ *  ============================================================ */
+
+export interface PlanInquiry {
+  id: string;
+  plan: string;
+  company: string;
+  contact_name: string;
+  email: string;
+  phone: string | null;
+  member_count: number | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+}
+
+export type InquiryStatus = 'new' | 'contacted' | 'closed';
+
+/** 申し込み一覧（新しい順）。 */
+export async function listPlanInquiries(): Promise<PlanInquiry[]> {
+  await requireSuperAdmin();
+  const admin = getAdminClient();
+  const { data } = await (admin.from('plan_inquiries' as any) as any)
+    .select('*')
+    .order('created_at', { ascending: false });
+  return (data as PlanInquiry[] | null) ?? [];
+}
+
+/** 申し込みのステータスを更新。 */
+export async function updateInquiryStatus(
+  id: string,
+  status: InquiryStatus
+): Promise<{ success?: true; error?: string }> {
+  await requireSuperAdmin();
+  const admin = getAdminClient();
+  const { error } = await (admin.from('plan_inquiries' as any) as any)
+    .update({ status })
+    .eq('id', id);
+  if (error) return { error: 'ステータス更新に失敗しました' };
+  revalidatePath('/super-admin/inquiries');
+  return { success: true };
+}

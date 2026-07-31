@@ -9,11 +9,16 @@ export default async function SuperAdminTopPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <h1 className="text-2xl font-bold text-text-primary">テナント一覧</h1>
-        <Link href="/super-admin/teams/new">
-          <Button variant="primary">+ 新規テナント発行</Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/super-admin/inquiries">
+            <Button variant="secondary">申し込み一覧</Button>
+          </Link>
+          <Link href="/super-admin/teams/new">
+            <Button variant="primary">+ 新規テナント発行</Button>
+          </Link>
+        </div>
       </div>
 
       {teams.length === 0 ? (
