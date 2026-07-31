@@ -51,7 +51,6 @@ export default function PricingPage() {
         <h1 className="text-3xl md:text-4xl font-bold text-text-primary">料金プラン</h1>
         <p className="mt-4 text-base md:text-lg text-text-secondary leading-relaxed">
           チーム単位の月額制。まずは Free から、必要に応じて上位プランへ。
-          お申し込みは下のフォームから、担当者がチームを開設します。
         </p>
       </section>
 
