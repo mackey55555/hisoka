@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateInquiryStatus, type InquiryStatus } from '@/lib/actions/super-admin';
+import { updateInquiryStatus, deletePlanInquiry, type InquiryStatus } from '@/lib/actions/super-admin';
 
 const STATUSES: { value: InquiryStatus; label: string }[] = [
   { value: 'new', label: '未対応' },
@@ -26,8 +26,17 @@ export function InquiryStatusButtons({ id, current }: { id: string; current: str
     }
   };
 
+  const remove = async () => {
+    if (loading) return;
+    if (!confirm('この申し込みを削除します。よろしいですか？')) return;
+    setLoading(true);
+    const res = await deletePlanInquiry(id);
+    setLoading(false);
+    if (!res.error) router.refresh();
+  };
+
   return (
-    <div className="flex gap-1">
+    <div className="flex items-center gap-1">
       {STATUSES.map((st) => (
         <button
           key={st.value}
@@ -42,6 +51,13 @@ export function InquiryStatusButtons({ id, current }: { id: string; current: str
           {st.label}
         </button>
       ))}
+      <button
+        onClick={remove}
+        disabled={loading}
+        className="text-xs px-2.5 py-1 rounded text-error hover:bg-error/10 transition-colors disabled:opacity-50 ml-1"
+      >
+        削除
+      </button>
     </div>
   );
 }

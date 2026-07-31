@@ -420,3 +420,17 @@ export async function updateInquiryStatus(
   revalidatePath('/super-admin/inquiries');
   return { success: true };
 }
+
+/** 申し込みを削除する。 */
+export async function deletePlanInquiry(
+  id: string
+): Promise<{ success?: true; error?: string }> {
+  await requireSuperAdmin();
+  const admin = getAdminClient();
+  const { error } = await (admin.from('plan_inquiries' as any) as any)
+    .delete()
+    .eq('id', id);
+  if (error) return { error: '削除に失敗しました' };
+  revalidatePath('/super-admin/inquiries');
+  return { success: true };
+}
