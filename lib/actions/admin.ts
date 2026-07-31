@@ -110,7 +110,7 @@ export async function updateUser(
     .eq('team_id', team.teamId)
     .eq('user_id', userId)
     .maybeSingle();
-  if ((targetMember as any)?.role === 'admin' && validated.data.role !== 'admin') {
+  if ((targetMember as any)?.role === 'admin') {
     const { count: adminCount } = await (admin.from('team_members' as any) as any)
       .select('id', { count: 'exact', head: true })
       .eq('team_id', team.teamId)
