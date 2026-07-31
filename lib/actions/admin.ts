@@ -103,6 +103,27 @@ export async function updateUser(
 
   const admin = getAdminClient();
 
+  // 最後の管理者(admin)の降格は禁止。adminへの昇格はSuperAdmin限定のため、
+  // 降格するとチームにadminが居なくなり運営しか復旧できない“詰み”になる。
+  const { data: targetMember } = await (admin.from('team_members' as any) as any)
+    .select('role')
+    .eq('team_id', team.teamId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if ((targetMember as any)?.role === 'admin' && validated.data.role !== 'admin') {
+    const { count: adminCount } = await (admin.from('team_members' as any) as any)
+      .select('id', { count: 'exact', head: true })
+      .eq('team_id', team.teamId)
+      .eq('role', 'admin')
+      .eq('status', 'active');
+    if ((adminCount ?? 0) <= 1) {
+      return {
+        error:
+          'このチームの唯一の管理者のため、役割を変更できません。先に別の管理者を用意してください（管理者の追加は運営へご相談ください）。',
+      };
+    }
+  }
+
   const { error: userError } = await (admin as any)
     .from('users')
     .update({
@@ -149,6 +170,27 @@ export async function removeUserFromTeam(teamSlug: string, userId: string) {
   }
 
   const admin = getAdminClient();
+
+  // 最後の管理者(admin)の除外は禁止（除外するとチームにadminが居なくなり詰む）
+  const { data: targetMember } = await (admin.from('team_members' as any) as any)
+    .select('role')
+    .eq('team_id', team.teamId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if ((targetMember as any)?.role === 'admin') {
+    const { count: adminCount } = await (admin.from('team_members' as any) as any)
+      .select('id', { count: 'exact', head: true })
+      .eq('team_id', team.teamId)
+      .eq('role', 'admin')
+      .eq('status', 'active');
+    if ((adminCount ?? 0) <= 1) {
+      return {
+        error:
+          'このチームの唯一の管理者のため、除外できません。先に別の管理者を用意してください（管理者の追加は運営へご相談ください）。',
+      };
+    }
+  }
+
   const { error } = await admin
     .from('team_members' as any)
     .delete()
