@@ -29,14 +29,18 @@ export async function resolveTeamFromSlug(slug: string): Promise<ResolvedTeam> {
 
   const { data: team, error: teamErr } = await supabase
     .from('teams' as any)
-    .select('id, slug, name')
+    .select('id, slug, name, status')
     .eq('slug', slug)
     .single();
 
   if (teamErr || !team) notFound();
-  const t = team as { id: string; slug: string; name: string };
+  const t = team as { id: string; slug: string; name: string; status: string };
 
   const isSuperAdmin = await checkIsSuperAdmin(user.id);
+
+  // 解約/停止(active以外)のチームは一般メンバーはアクセス不可。
+  // SuperAdmin は再有効化・確認のため通す。再有効化(active化)で復活する。
+  if (t.status !== 'active' && !isSuperAdmin) notFound();
 
   const { data: membership } = await supabase
     .from('team_members' as any)
@@ -112,14 +116,15 @@ export async function listMyTeams(): Promise<MyTeamSummary[]> {
 
   const { data, error } = await supabase
     .from('team_members' as any)
-    .select('role, teams:team_id ( id, slug, name )')
+    .select('role, teams:team_id ( id, slug, name, status )')
     .eq('user_id', user.id)
     .eq('status', 'active');
 
   if (error || !data) return [];
 
   return (data as any[])
-    .filter((row) => row.teams)
+    // 解約/停止チームは所属一覧から除外（アクセスさせない）
+    .filter((row) => row.teams && row.teams.status === 'active')
     .map((row) => ({
       id: row.teams.id,
       slug: row.teams.slug,

@@ -139,12 +139,13 @@ export async function updateSession(request: NextRequest) {
     // キャッシュなし: DB から取得
     const { data: memberRows } = await supabase
       .from('team_members' as any)
-      .select('team_id, teams:team_id ( slug )')
+      .select('team_id, teams:team_id ( slug, status )')
       .eq('user_id', user.id)
       .eq('status', 'active');
 
+    // 解約/停止(active以外)のチームは所属から除外＝アクセスさせない
     slugs = (memberRows as any[] | null)
-      ?.map((r) => r.teams?.slug)
+      ?.map((r) => (r.teams?.status === 'active' ? r.teams?.slug : null))
       .filter((s): s is string => Boolean(s)) ?? [];
 
     const { data: meRow } = await supabase
