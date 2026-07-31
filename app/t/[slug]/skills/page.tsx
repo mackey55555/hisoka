@@ -1,6 +1,4 @@
-import { redirect } from 'next/navigation';
 import { getMySkillProfile } from '@/lib/actions/ai';
-import { resolveTeamFromSlug } from '@/lib/context/current-team';
 import { MySkillCard } from '@/components/features/dashboard/my-skill-card';
 
 export default async function SkillsPage({
@@ -10,11 +8,7 @@ export default async function SkillsPage({
 }) {
   const { slug } = await params;
 
-  const team = await resolveTeamFromSlug(slug);
-  if (team.role === 'admin') {
-    redirect(`/t/${slug}/admin`);
-  }
-
+  // admin も本人として密かなスキルを利用可（リダイレクトしない）
   const { data: profile } = await getMySkillProfile(slug);
 
   return (

@@ -122,6 +122,13 @@ export function Sidebar({ role, teamSlug, teams = [] }: SidebarProps) {
   ];
 
   const adminMenuItems: MenuRow[] = [
+    // admin も本人として利用（管理＋自分の記録/診断/スキル）
+    { href: `${base}/dashboard`, label: 'ダッシュボード', icon: DashboardIcon },
+    { href: `${base}/skills`, label: '密かなスキル', icon: SparkleIcon },
+    { href: `${base}/dashboard/ai`, label: 'AI診断', icon: AiIcon },
+    { href: `${base}/goals`, label: '目標一覧', icon: ListIcon },
+    { href: `${base}/goals/new`, label: '新規目標', icon: PlusIcon },
+    { divider: true },
     { href: `${base}/admin`, label: '管理画面', icon: HomeIcon },
     { href: `${base}/admin/users`, label: 'ユーザー管理', icon: UsersIcon },
     { href: `${base}/admin/trainers`, label: 'トレーナー管理', icon: TrainerIcon },
@@ -179,7 +186,7 @@ export function Sidebar({ role, teamSlug, teams = [] }: SidebarProps) {
         {/* ヘッダー部分（サイドバー上部、デスクトップのみ） */}
         <div className="hidden lg:flex h-16 border-b border-border items-center px-6 flex-shrink-0">
           <Link
-            href={role === 'admin' ? `${base}/admin` : `${base}/dashboard`}
+            href={`${base}/dashboard`}
             onClick={() => setIsOpen(false)}
             className="block"
           >

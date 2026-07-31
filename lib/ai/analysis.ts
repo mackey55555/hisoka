@@ -297,11 +297,11 @@ export async function runMonthlyAnalysis(): Promise<AnalysisResult> {
   weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
   weekStart.setHours(0, 0, 0, 0);
 
-  // 全 trainee メンバーシップを取得（複数チーム所属でもチームごとに1件処理）
+  // 全 active メンバーシップを取得（role 不問＝admin/trainer も本人利用で診断対象。
+  // テキスト不足の人は後段でskip。複数チーム所属でもチームごとに1件処理）
   const { data: traineeMembers } = await (adminClient as any)
     .from('team_members')
     .select('user_id, team_id')
-    .eq('role', 'trainee')
     .eq('status', 'active');
 
   if (!traineeMembers || traineeMembers.length === 0) {

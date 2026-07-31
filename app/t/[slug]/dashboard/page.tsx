@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getGoals } from '@/lib/actions/goals';
@@ -28,9 +27,7 @@ export default async function DashboardPage({
   const { slug } = await params;
 
   const team = await resolveTeamFromSlug(slug);
-  if (team.role === 'admin') {
-    redirect(`/t/${slug}/admin`);
-  }
+  // admin も本人として利用可（管理＋自分の記録/診断/スキル）。リダイレクトしない。
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
