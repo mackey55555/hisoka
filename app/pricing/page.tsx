@@ -82,7 +82,20 @@ export default function PricingPage() {
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">メンバー最大 {c.maxMembers}名</p>
 
-                {/* 閲覧できる期間（Free=制限あり / Starter・Pro=無制限） */}
+                <ul className="mt-6 space-y-2.5 flex-1">
+                  {featureRows(c).slice(3).map((r) => (
+                    <li key={r.label} className="flex items-center justify-between gap-2 text-base">
+                      <span className="text-text-secondary">{r.label}</span>
+                      <span>{r.value}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-7">
+                  <ApplyCtaButton plan={id} variant={featured ? 'primary' : 'secondary'} />
+                </div>
+
+                {/* 閲覧できる期間（申し込むボタンの下に表示。Free=制限 / Starter・Pro=無制限） */}
                 <div className="mt-3 rounded-lg bg-background px-3 py-2">
                   <p className="text-sm">
                     <span className="text-text-secondary">閲覧できる期間：</span>
@@ -95,19 +108,6 @@ export default function PricingPage() {
                       ※お試し用に閲覧期間を制限しています（データは保持され、上位プランで全期間ご覧いただけます）。
                     </p>
                   )}
-                </div>
-
-                <ul className="mt-5 space-y-2.5 flex-1">
-                  {featureRows(c).slice(3).map((r) => (
-                    <li key={r.label} className="flex items-center justify-between gap-2 text-base">
-                      <span className="text-text-secondary">{r.label}</span>
-                      <span>{r.value}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-7">
-                  <ApplyCtaButton plan={id} variant={featured ? 'primary' : 'secondary'} />
                 </div>
               </div>
             );
