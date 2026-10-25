@@ -17,13 +17,15 @@ function getAdminClient() {
   });
 }
 
+// Anthropic の構造化出力は number の minimum/maximum を受け付けないため、
+// スキーマでは範囲を縛らず、受け取った後に clamp で丸める（範囲はプロンプトで指示）。
 const sentimentSchema = z.object({
-  score: z.number().min(-1).max(1),
-  positive_ratio: z.number().min(0).max(1),
-  negative_ratio: z.number().min(0).max(1),
-  neutral_ratio: z.number().min(0).max(1),
-  positive_keywords: z.array(z.string()).max(5),
-  negative_keywords: z.array(z.string()).max(5),
+  score: z.number(),
+  positive_ratio: z.number(),
+  negative_ratio: z.number(),
+  neutral_ratio: z.number(),
+  positive_keywords: z.array(z.string()),
+  negative_keywords: z.array(z.string()),
 });
 
 const questionSuggestSchema = z.object({
@@ -31,8 +33,8 @@ const questionSuggestSchema = z.object({
     question: z.string(),
     category: z.enum(['growth', 'challenge', 'strength', 'emotion', 'next_step']),
     intent: z.string(),
-    priority: z.number().int().min(1).max(5),
-  })).length(5),
+    priority: z.number().int(),
+  })),
 });
 
 /**
@@ -89,7 +91,16 @@ async function analyzeSentiment(text: string) {
     schema: sentimentSchema,
     prompt,
   });
-  return object;
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  return {
+    ...object,
+    positive_keywords: object.positive_keywords.slice(0, 5),
+    negative_keywords: object.negative_keywords.slice(0, 5),
+    score: clamp(object.score, -1, 1),
+    positive_ratio: clamp(object.positive_ratio, 0, 1),
+    negative_ratio: clamp(object.negative_ratio, 0, 1),
+    neutral_ratio: clamp(object.neutral_ratio, 0, 1),
+  };
 }
 
 /**
@@ -101,7 +112,8 @@ async function generateSummary(text: string) {
     model: getModel(),
     prompt,
   });
-  return summary;
+  // モデルが Markdown 見出し（## 今月のまとめ 等）を付けて返すことがあるため、表示用に外す
+  return summary.replace(/^\s*#{1,6}\s+.*(?:\r?\n)+/gm, '').trim();
 }
 
 /**
@@ -140,7 +152,10 @@ async function generateQuestions(
     schema: questionSuggestSchema,
     prompt,
   });
-  return object.questions;
+  return object.questions.slice(0, 5).map((q) => ({
+    ...q,
+    priority: Math.min(5, Math.max(1, Math.round(q.priority))),
+  }));
 }
 
 export interface AnalysisResult {
